@@ -63,36 +63,9 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
-        /* 隐藏的金数据表单 */
-        #jinshuju-form { display: none; }
     </style>
 </head>
 <body class="text-stone-800 antialiased">
-
-    <!-- 隐藏的 iframe，用于无跳转提交 -->
-    <iframe name="jinshuju_target" id="jinshuju_target" style="display:none;"></iframe>
-    
-    <!-- 隐藏的金数据表单 (xDPguE) -->
-    <form id="jinshuju-form" action="https://jinshuju.net/f/xDPguE" method="POST" target="jinshuju_target">
-        <input type="text" name="entry[field_1]" id="js_name">
-        <input type="text" name="entry[field_2]" id="js_wechat">
-        <input type="text" name="entry[field_3]" id="js_school">
-        <input type="text" name="entry[field_4]" id="js_gpa">
-        <textarea name="entry[field_5]" id="js_courses"></textarea>
-        <input type="text" name="entry[field_6]" id="js_degree">
-        <input type="text" name="entry[field_7]" id="js_major">
-        <input type="text" name="entry[field_8]" id="js_countries">
-        <input type="text" name="entry[field_9]" id="js_year">
-        <textarea name="entry[field_10]" id="js_project"></textarea>
-        <textarea name="entry[field_11]" id="js_work"></textarea>
-        <textarea name="entry[field_12]" id="js_special"></textarea>
-        <input type="text" name="entry[field_13]" id="js_budget">
-        <input type="text" name="entry[field_14]" id="js_motivation">
-        <input type="text" name="entry[field_15]" id="js_needs">
-        <input type="text" name="entry[field_16]" id="js_worry">
-        <input type="text" name="entry[field_17]" id="js_decision">
-        <input type="text" name="entry[field_18]" id="js_source">
-    </form>
 
     <header class="bg-white border-b border-stone-200 sticky top-0 z-50">
         <div class="max-w-3xl mx-auto px-6 py-4 flex justify-between items-center">
@@ -459,105 +432,132 @@
     </main>
 
     <script>
-        // 数据提交函数
-        function submitForm() {
+        // 数据提交函数 - 使用 Fetch API 直接提交到金数据
+        async function submitForm() {
             const form = document.getElementById('assessmentForm');
             
             // 验证
             const required = form.querySelectorAll('[required]');
             let valid = true;
+            let firstError = null;
+            
             required.forEach(field => {
                 if (field.type === 'radio') {
                     const name = field.name;
                     const checked = form.querySelector(`[name="${name}"]:checked`);
-                    if (!checked) valid = false;
+                    if (!checked) {
+                        valid = false;
+                        if (!firstError) firstError = field;
+                    }
                 } else if (field.type === 'checkbox') {
                     // 多选框不强制
                 } else if (!field.value.trim()) {
                     valid = false;
                     field.classList.add('border-red-400');
-                    setTimeout(() => field.classList.remove('border-red-400'), 2000);
+                    if (!firstError) firstError = field;
                 }
             });
             
             if (!valid) {
                 alert('请填写所有必填项（标*号）');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
                 return;
             }
 
             // 按钮状态
             const btn = document.getElementById('submitBtn');
             btn.classList.add('submitting');
+            btn.disabled = true;
             document.getElementById('btnText').textContent = '提交中...';
 
-            // 数据映射到金数据表单
-            document.getElementById('js_name').value = form.querySelector('[name="name"]')?.value || '';
-            document.getElementById('js_wechat').value = form.querySelector('[name="wechat"]')?.value || '';
-            document.getElementById('js_school').value = (form.querySelector('[name="school"]')?.value || '') + ' | ' + (form.querySelector('[name="grade"]')?.value || '');
-            document.getElementById('js_gpa').value = form.querySelector('[name="gpa"]')?.value || '';
-            document.getElementById('js_courses').value = form.querySelector('[name="courses"]')?.value || '';
-            document.getElementById('js_degree').value = form.querySelector('[name="degree"]')?.value || '';
-            document.getElementById('js_major').value = form.querySelector('[name="major"]')?.value || '';
-            
-            const countries = Array.from(form.querySelectorAll('[name="countries"]:checked')).map(cb => cb.value).join(', ');
-            document.getElementById('js_countries').value = countries;
-            
-            document.getElementById('js_year').value = form.querySelector('[name="year"]')?.value || '';
-            
-            // 合并项目经历
-            const proj1 = form.querySelector('[name="project_name"]')?.value || '';
-            const proj1_detail = form.querySelector('[name="project_detail"]')?.value || '';
-            const proj2 = form.querySelector('[name="project2_name"]')?.value || '';
-            const proj2_detail = form.querySelector('[name="project2_detail"]')?.value || '';
-            let projectStr = proj1 ? `【项目1】${proj1}: ${proj1_detail}` : '';
-            if (proj2) projectStr += ` | 【项目2】${proj2}: ${proj2_detail}`;
-            document.getElementById('js_project').value = projectStr;
-            
-            const work = form.querySelector('[name="work"]')?.value || '';
-            const workMoment = form.querySelector('[name="work_moment"]')?.value || '';
-            document.getElementById('js_work').value = work ? `${work} | ${workMoment}` : '';
-            
-            document.getElementById('js_special').value = form.querySelector('[name="special"]')?.value || '';
-            
-            const budget = form.querySelector('[name="budget"]:checked');
-            document.getElementById('js_budget').value = budget ? budget.value : '';
-            
-            const motivation = form.querySelector('[name="motivation"]:checked');
-            document.getElementById('js_motivation').value = motivation ? motivation.value : '';
-            
-            const needs = Array.from(form.querySelectorAll('[name="needs"]:checked')).map(cb => cb.value).join(', ');
-            document.getElementById('js_needs').value = needs;
-            
-            document.getElementById('js_worry').value = form.querySelector('[name="worry"]')?.value || '';
-            document.getElementById('js_decision').value = form.querySelector('[name="decision"]')?.value || '';
-            document.getElementById('js_source').value = form.querySelector('[name="source"]')?.value || '';
+            try {
+                // 收集表单数据
+                const motivation = form.querySelector('[name="motivation"]:checked');
+                const needs = Array.from(form.querySelectorAll('[name="needs"]:checked')).map(cb => cb.value).join(', ');
+                const countries = Array.from(form.querySelectorAll('[name="countries"]:checked')).map(cb => cb.value).join(', ');
+                const budget = form.querySelector('[name="budget"]:checked');
+                
+                const proj1 = form.querySelector('[name="project_name"]')?.value || '';
+                const proj1_detail = form.querySelector('[name="project_detail"]')?.value || '';
+                const proj2 = form.querySelector('[name="project2_name"]')?.value || '';
+                const proj2_detail = form.querySelector('[name="project2_detail"]')?.value || '';
+                let projectStr = proj1 ? `【项目1】${proj1}: ${proj1_detail}` : '';
+                if (proj2) projectStr += ` | 【项目2】${proj2}: ${proj2_detail}`;
+                
+                const work = form.querySelector('[name="work"]')?.value || '';
+                const workMoment = form.querySelector('[name="work_moment"]')?.value || '';
+                const workStr = work ? `${work} | ${workMoment}` : '';
 
-            // 提交到金数据（通过隐藏 iframe，无跳转）
-            setTimeout(() => {
-                document.getElementById('jinshuju-form').submit();
-                
+                // 构建提交数据 - 使用正确的字段名格式 field_X
+                const formData = new URLSearchParams();
+                formData.append('field_1', form.querySelector('[name="name"]')?.value || '');
+                formData.append('field_2', form.querySelector('[name="wechat"]')?.value || '');
+                formData.append('field_3', (form.querySelector('[name="school"]')?.value || '') + ' | ' + (form.querySelector('[name="grade"]')?.value || ''));
+                formData.append('field_4', form.querySelector('[name="gpa"]')?.value || '');
+                formData.append('field_5', form.querySelector('[name="courses"]')?.value || '');
+                formData.append('field_6', form.querySelector('[name="degree"]')?.value || '');
+                formData.append('field_7', form.querySelector('[name="major"]')?.value || '');
+                formData.append('field_8', countries);
+                formData.append('field_9', form.querySelector('[name="year"]')?.value || '');
+                formData.append('field_10', projectStr);
+                formData.append('field_11', workStr);
+                formData.append('field_12', form.querySelector('[name="special"]')?.value || '');
+                formData.append('field_13', budget ? budget.value : '');
+                formData.append('field_14', motivation ? motivation.value : '');
+                formData.append('field_15', needs);
+                formData.append('field_16', form.querySelector('[name="worry"]')?.value || '');
+                formData.append('field_17', form.querySelector('[name="decision"]')?.value || '');
+                formData.append('field_18', form.querySelector('[name="source"]')?.value || '');
+
+                // 提交到金数据 - 使用 no-cors 模式避免跨域问题
+                const response = await fetch('https://jinshuju.net/f/xDPguE', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData.toString(),
+                    mode: 'no-cors'
+                });
+
+                // 由于 no-cors 模式，我们无法读取响应，但请求会发送
+                // 延迟一下确保请求已发送
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
                 // 显示成功弹窗
-                const modal = document.getElementById('successModal');
-                const content = document.getElementById('modalContent');
-                const refId = 'CORE-' + Date.now().toString(36).substr(-6).toUpperCase();
-                document.getElementById('refId').textContent = refId;
-                document.getElementById('submitTime').textContent = new Date().toLocaleString('zh-CN');
-                
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                setTimeout(() => {
-                    content.classList.remove('scale-95', 'opacity-0');
-                    content.classList.add('scale-100', 'opacity-100');
-                }, 10);
-                
+                showSuccessModal();
+
+            } catch (error) {
+                console.error('提交失败:', error);
+                alert('提交失败，请稍后重试或直接联系 Lisa (微信: LizziV)');
+            } finally {
                 btn.classList.remove('submitting');
+                btn.disabled = false;
                 document.getElementById('btnText').textContent = '提交评估，等待 Lisa 联系';
-            }, 800);
+            }
+        }
+
+        function showSuccessModal() {
+            const modal = document.getElementById('successModal');
+            const content = document.getElementById('modalContent');
+            const refId = 'CORE-' + Date.now().toString(36).substr(-6).toUpperCase();
+            document.getElementById('refId').textContent = refId;
+            document.getElementById('submitTime').textContent = new Date().toLocaleString('zh-CN');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
         }
 
         function closeModal() {
             document.getElementById('successModal').classList.add('hidden');
             document.getElementById('successModal').classList.remove('flex');
+            // 可选：重置表单
+            // document.getElementById('assessmentForm').reset();
         }
 
         // 字符计数
