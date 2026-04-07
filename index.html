@@ -432,7 +432,9 @@
     </main>
 
     <script>
-        // 数据提交函数 - 使用 Fetch API 直接提交到金数据
+        // Forminit 配置
+        const FORMINIT_ENDPOINT = 'https://app.forminit.com/f/05pr2x43he1';
+
         async function submitForm() {
             const form = document.getElementById('assessmentForm');
             
@@ -490,43 +492,44 @@
                 const workMoment = form.querySelector('[name="work_moment"]')?.value || '';
                 const workStr = work ? `${work} | ${workMoment}` : '';
 
-                // 构建提交数据 - 使用正确的字段名格式 field_X
-                const formData = new URLSearchParams();
-                formData.append('field_1', form.querySelector('[name="name"]')?.value || '');
-                formData.append('field_2', form.querySelector('[name="wechat"]')?.value || '');
-                formData.append('field_3', (form.querySelector('[name="school"]')?.value || '') + ' | ' + (form.querySelector('[name="grade"]')?.value || ''));
-                formData.append('field_4', form.querySelector('[name="gpa"]')?.value || '');
-                formData.append('field_5', form.querySelector('[name="courses"]')?.value || '');
-                formData.append('field_6', form.querySelector('[name="degree"]')?.value || '');
-                formData.append('field_7', form.querySelector('[name="major"]')?.value || '');
-                formData.append('field_8', countries);
-                formData.append('field_9', form.querySelector('[name="year"]')?.value || '');
-                formData.append('field_10', projectStr);
-                formData.append('field_11', workStr);
-                formData.append('field_12', form.querySelector('[name="special"]')?.value || '');
-                formData.append('field_13', budget ? budget.value : '');
-                formData.append('field_14', motivation ? motivation.value : '');
-                formData.append('field_15', needs);
-                formData.append('field_16', form.querySelector('[name="worry"]')?.value || '');
-                formData.append('field_17', form.querySelector('[name="decision"]')?.value || '');
-                formData.append('field_18', form.querySelector('[name="source"]')?.value || '');
+                // 生成唯一编号
+                const refId = 'CORE-' + Date.now().toString(36).substr(-6).toUpperCase();
 
-                // 提交到金数据 - 使用 no-cors 模式避免跨域问题
-                const response = await fetch('https://37jpwzec.jsjform.com/f/xDPguE', {
+                // 构建 Forminit 数据
+                const formData = new FormData();
+                formData.append('姓名', form.querySelector('[name="name"]')?.value || '');
+                formData.append('微信号', form.querySelector('[name="wechat"]')?.value || '');
+                formData.append('学校专业年级', (form.querySelector('[name="school"]')?.value || '') + ' | ' + (form.querySelector('[name="grade"]')?.value || ''));
+                formData.append('GPA', form.querySelector('[name="gpa"]')?.value || '');
+                formData.append('核心课程', form.querySelector('[name="courses"]')?.value || '');
+                formData.append('目标学位', form.querySelector('[name="degree"]')?.value || '');
+                formData.append('目标专业', form.querySelector('[name="major"]')?.value || '');
+                formData.append('目标国家', countries);
+                formData.append('入学年份', form.querySelector('[name="year"]')?.value || '');
+                formData.append('项目经历', projectStr);
+                formData.append('工作经历', workStr);
+                formData.append('差异化经历', form.querySelector('[name="special"]')?.value || '');
+                formData.append('预算', budget ? budget.value : '');
+                formData.append('留学动机', motivation ? motivation.value : '');
+                formData.append('需求', needs);
+                formData.append('担忧', form.querySelector('[name="worry"]')?.value || '');
+                formData.append('决策者', form.querySelector('[name="decision"]')?.value || '');
+                formData.append('来源', form.querySelector('[name="source"]')?.value || '');
+                formData.append('表单编号', refId);
+                formData.append('提交时间', new Date().toLocaleString('zh-CN'));
+
+                // 提交到 Forminit
+                const response = await fetch(FORMINIT_ENDPOINT, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: formData.toString(),
-                    mode: 'no-cors'
+                    body: formData
                 });
 
-                // 由于 no-cors 模式，我们无法读取响应，但请求会发送
-                // 延迟一下确保请求已发送
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                // 显示成功弹窗
-                showSuccessModal();
+                // Forminit 可能会返回 302 重定向或 200
+                if (response.ok || response.status === 302 || response.status === 0) {
+                    showSuccessModal(refId);
+                } else {
+                    throw new Error('提交失败: ' + response.status);
+                }
 
             } catch (error) {
                 console.error('提交失败:', error);
@@ -538,10 +541,9 @@
             }
         }
 
-        function showSuccessModal() {
+        function showSuccessModal(refId) {
             const modal = document.getElementById('successModal');
             const content = document.getElementById('modalContent');
-            const refId = 'CORE-' + Date.now().toString(36).substr(-6).toUpperCase();
             document.getElementById('refId').textContent = refId;
             document.getElementById('submitTime').textContent = new Date().toLocaleString('zh-CN');
             
@@ -556,8 +558,6 @@
         function closeModal() {
             document.getElementById('successModal').classList.add('hidden');
             document.getElementById('successModal').classList.remove('flex');
-            // 可选：重置表单
-            // document.getElementById('assessmentForm').reset();
         }
 
         // 字符计数
