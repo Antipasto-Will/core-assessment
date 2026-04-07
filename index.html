@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CORE Studio - 双向匹配小问卷</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://forminit.com/sdk/v1/forminit.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         body {
@@ -433,7 +434,10 @@
 
     <script>
         // Forminit 配置
-        const FORMINIT_ENDPOINT = 'https://app.forminit.com/f/05pr2x43he1';
+        const FORMINIT_FORM_ID = '05pr2x43he1';
+        
+        // 初始化 Forminit SDK
+        const forminit = new Forminit();
 
         async function submitForm() {
             const form = document.getElementById('assessmentForm');
@@ -495,45 +499,124 @@
                 // 生成唯一编号
                 const refId = 'CORE-' + Date.now().toString(36).substr(-6).toUpperCase();
 
-                // 构建 Forminit 数据
-                const formData = new FormData();
-                formData.append('姓名', form.querySelector('[name="name"]')?.value || '');
-                formData.append('微信号', form.querySelector('[name="wechat"]')?.value || '');
-                formData.append('学校专业年级', (form.querySelector('[name="school"]')?.value || '') + ' | ' + (form.querySelector('[name="grade"]')?.value || ''));
-                formData.append('GPA', form.querySelector('[name="gpa"]')?.value || '');
-                formData.append('核心课程', form.querySelector('[name="courses"]')?.value || '');
-                formData.append('目标学位', form.querySelector('[name="degree"]')?.value || '');
-                formData.append('目标专业', form.querySelector('[name="major"]')?.value || '');
-                formData.append('目标国家', countries);
-                formData.append('入学年份', form.querySelector('[name="year"]')?.value || '');
-                formData.append('项目经历', projectStr);
-                formData.append('工作经历', workStr);
-                formData.append('差异化经历', form.querySelector('[name="special"]')?.value || '');
-                formData.append('预算', budget ? budget.value : '');
-                formData.append('留学动机', motivation ? motivation.value : '');
-                formData.append('需求', needs);
-                formData.append('担忧', form.querySelector('[name="worry"]')?.value || '');
-                formData.append('决策者', form.querySelector('[name="decision"]')?.value || '');
-                formData.append('来源', form.querySelector('[name="source"]')?.value || '');
-                formData.append('表单编号', refId);
-                formData.append('提交时间', new Date().toLocaleString('zh-CN'));
+                // 构建 Forminit blocks 格式数据
+                const blocks = [
+                    {
+                        type: 'text',
+                        name: '姓名',
+                        value: form.querySelector('[name="name"]')?.value || ''
+                    },
+                    {
+                        type: 'text',
+                        name: '微信号',
+                        value: form.querySelector('[name="wechat"]')?.value || ''
+                    },
+                    {
+                        type: 'text',
+                        name: '学校专业年级',
+                        value: (form.querySelector('[name="school"]')?.value || '') + ' | ' + (form.querySelector('[name="grade"]')?.value || '')
+                    },
+                    {
+                        type: 'text',
+                        name: 'GPA',
+                        value: form.querySelector('[name="gpa"]')?.value || ''
+                    },
+                    {
+                        type: 'text',
+                        name: '核心课程',
+                        value: form.querySelector('[name="courses"]')?.value || ''
+                    },
+                    {
+                        type: 'text',
+                        name: '目标学位',
+                        value: form.querySelector('[name="degree"]')?.value || ''
+                    },
+                    {
+                        type: 'text',
+                        name: '目标专业',
+                        value: form.querySelector('[name="major"]')?.value || ''
+                    },
+                    {
+                        type: 'text',
+                        name: '目标国家',
+                        value: countries
+                    },
+                    {
+                        type: 'text',
+                        name: '入学年份',
+                        value: form.querySelector('[name="year"]')?.value || ''
+                    },
+                    {
+                        type: 'text',
+                        name: '项目经历',
+                        value: projectStr
+                    },
+                    {
+                        type: 'text',
+                        name: '工作经历',
+                        value: workStr
+                    },
+                    {
+                        type: 'text',
+                        name: '差异化经历',
+                        value: form.querySelector('[name="special"]')?.value || ''
+                    },
+                    {
+                        type: 'text',
+                        name: '预算',
+                        value: budget ? budget.value : ''
+                    },
+                    {
+                        type: 'text',
+                        name: '留学动机',
+                        value: motivation ? motivation.value : ''
+                    },
+                    {
+                        type: 'text',
+                        name: '需求',
+                        value: needs
+                    },
+                    {
+                        type: 'text',
+                        name: '担忧',
+                        value: form.querySelector('[name="worry"]')?.value || ''
+                    },
+                    {
+                        type: 'text',
+                        name: '决策者',
+                        value: form.querySelector('[name="decision"]')?.value || ''
+                    },
+                    {
+                        type: 'text',
+                        name: '来源',
+                        value: form.querySelector('[name="source"]')?.value || ''
+                    },
+                    {
+                        type: 'text',
+                        name: '表单编号',
+                        value: refId
+                    },
+                    {
+                        type: 'text',
+                        name: '提交时间',
+                        value: new Date().toLocaleString('zh-CN')
+                    }
+                ];
 
-                // 提交到 Forminit
-                const response = await fetch(FORMINIT_ENDPOINT, {
-                    method: 'POST',
-                    body: formData
-                });
+                // 使用 Forminit SDK 提交
+                const { data, error } = await forminit.submit(FORMINIT_FORM_ID, { blocks });
 
-                // Forminit 可能会返回 302 重定向或 200
-                if (response.ok || response.status === 302 || response.status === 0) {
-                    showSuccessModal(refId);
-                } else {
-                    throw new Error('提交失败: ' + response.status);
+                if (error) {
+                    console.error('Forminit 错误:', error);
+                    throw new Error(error.message || '提交失败');
                 }
+
+                // 显示成功弹窗
+                showSuccessModal(refId);
 
             } catch (error) {
                 console.error('提交失败:', error);
-                alert('提交失败，请稍后重试或直接联系 Lisa (微信: LizziV)');
+                alert('提交失败，请稍后重试或直接联系 Lisa (微信: LizziV)\n错误: ' + error.message);
             } finally {
                 btn.classList.remove('submitting');
                 btn.disabled = false;
