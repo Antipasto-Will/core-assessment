@@ -4,472 +4,623 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CORE Studio - 双向匹配小问卷</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
-            line-height: 1.6;
-            color: #333;
+            font-family: 'Inter', sans-serif;
+            background-color: #fafaf9;
         }
-        .container {
-            max-width: 680px;
-            margin: 0 auto;
-            padding: 40px 20px;
+        .serif {
+            font-family: 'Noto Serif SC', serif;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
+        .form-card {
+            transition: all 0.3s ease;
+            border: 1px solid #e7e5e4;
         }
-        .header h1 {
-            font-size: 24px;
-            margin-bottom: 12px;
+        .form-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
         }
-        .header p {
-            color: #666;
-            font-size: 14px;
+        .radio-selected {
+            border-color: #44403c;
+            background-color: #f5f5f4;
         }
-        .form-section {
-            background: white;
-            padding: 24px;
-            margin-bottom: 16px;
-            border-radius: 8px;
+        .conditional-field {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
         }
-        .section-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #1a1a1a;
+        .conditional-field.show {
+            max-height: 500px;
         }
-        .form-group {
-            margin-bottom: 20px;
+        .progress-bar {
+            transition: width 0.4s ease;
+            background-color: #292524;
         }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .required::after {
-            content: " *";
-            color: #e74c3c;
-        }
-        input[type="text"],
-        input[type="number"],
-        textarea,
-        select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.2s;
-        }
-        input:focus, textarea:focus, select:focus {
+        textarea:focus, input:focus, select:focus {
             outline: none;
-            border-color: #4a90d9;
-        }
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-        .checkbox-group, .radio-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .checkbox-item, .radio-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .checkbox-item:hover, .radio-item:hover {
-            background: #f8f9fa;
-        }
-        .checkbox-item input, .radio-item input {
-            width: auto;
-        }
-        .hint {
-            font-size: 12px;
-            color: #888;
-            margin-top: 4px;
-        }
-        .quote-box {
-            background: #f0f7ff;
-            border-left: 3px solid #4a90d9;
-            padding: 12px;
-            margin: 16px 0;
-            font-size: 13px;
-            color: #555;
-        }
-        .disclaimer {
-            background: #fffbeb;
-            border: 1px solid #f0e4bc;
-            padding: 16px;
-            border-radius: 6px;
-            font-size: 13px;
-            color: #666;
-            margin-top: 24px;
-        }
-        .submit-btn {
-            width: 100%;
-            padding: 16px;
-            background: #1a1a1a;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-top: 24px;
-        }
-        .submit-btn:hover {
-            background: #333;
-        }
-        .submit-btn:disabled {
-            background: #999;
-            cursor: not-allowed;
+            border-color: #44403c;
         }
         .char-count {
-            font-size: 12px;
-            color: #888;
+            font-size: 0.75rem;
+            color: #a8a29e;
             text-align: right;
-            margin-top: 4px;
+            margin-top: 0.25rem;
         }
-        .success-message {
+        .highlight-box {
+            background: linear-gradient(135deg, #f5f5f4 0%, #e7e5e4 100%);
+            border-left: 3px solid #292524;
+        }
+        .spinner {
             display: none;
-            text-align: center;
-            padding: 40px;
+            animation: spin 1s linear infinite;
         }
-        .success-message h2 {
-            margin-bottom: 16px;
-            color: #27ae60;
+        .submitting .spinner {
+            display: inline-block;
         }
-        .error-message {
-            color: #e74c3c;
-            font-size: 14px;
-            margin-top: 8px;
-            display: none;
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>CORE Studio - 双向匹配小问卷</h1>
-            <p>在深入聊天之前，我们需要了解一点点关于你的事情<br>
-            这不是某种"填表"，而是一次互相了解的预热。<br><br>
-            大概需要 5-7 分钟，填完后 Lisa 会在 24 小时内联系你。</p>
+<body class="text-stone-800 antialiased">
+
+    <header class="bg-white border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-3xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-stone-800 rounded-full flex items-center justify-center text-white font-serif text-sm">C</div>
+                <span class="font-semibold text-stone-800 tracking-tight">CORE Studio</span>
+            </div>
+            <div class="text-xs text-stone-500">双向匹配小问卷</div>
+        </div>
+        <div class="w-full bg-stone-200 h-1">
+            <div id="progressBar" class="progress-bar h-1" style="width: 0%"></div>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-6 py-12">
+        
+        <div class="mb-10 text-center">
+            <h1 class="serif text-3xl font-semibold text-stone-900 mb-4">在深入聊天之前，<br>我们需要了解一点点关于你的事情</h1>
+            <p class="text-stone-600 leading-relaxed max-w-lg mx-auto text-sm">
+                这不是某种<span class="text-stone-900 font-medium">"填表"</span>，而是一次互相了解的预热。
+                <br>大概需要 <span class="text-stone-900 font-semibold">5-7 分钟</span>，填完后 Lisa 会在 24 小时内联系你。
+            </p>
         </div>
 
-        <form id="assessmentForm">
-            <!-- Section 1: 动机 -->
-            <div class="form-section">
-                <div class="section-title">先聊聊，你为什么在这里</div>
-                
-                <div class="form-group">
-                    <label class="required">你为什么要留学？（选最戳中你的那个）</label>
-                    <div class="radio-group">
-                        <label class="radio-item">
-                            <input type="radio" name="motivation" value="换个环境/长期发展" required>
-                            <span>想换个环境 / 长期发展</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="motivation" value="体验学术生活环境">
-                            <span>体验不同的学术或生活环境</span>
-                        </label>
+        <form id="assessmentForm" class="space-y-8" onsubmit="return false;">
+
+            <section class="form-card bg-white rounded-2xl p-8 shadow-sm" data-progress="15">
+                <div class="flex items-center mb-6">
+                    <span class="w-8 h-8 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center text-sm font-medium mr-3">0</span>
+                    <h2 class="serif text-xl font-semibold text-stone-900">先聊聊，你为什么在这里</h2>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-3">你为什么要留学？（选最戳中你的那个）<span class="text-red-400">*</span></label>
+                        <div class="grid grid-cols-1 gap-3">
+                            <label class="radio-option cursor-pointer border border-stone-200 rounded-xl p-4 hover:border-stone-400 transition-colors flex items-start space-x-3 bg-white">
+                                <input type="radio" name="motivation" value="提升职业竞争力" class="mt-1 text-stone-800 focus:ring-stone-800" required>
+                                <div>
+                                    <div class="font-medium text-stone-900 text-sm">提升职业竞争力</div>
+                                    <div class="text-xs text-stone-500 mt-1">需要那个文凭作为敲门砖</div>
+                                </div>
+                            </label>
+                            <label class="radio-option cursor-pointer border border-stone-200 rounded-xl p-4 hover:border-stone-400 transition-colors flex items-start space-x-3 bg-white">
+                                <input type="radio" name="motivation" value="想换个环境/长期发展" class="mt-1 text-stone-800 focus:ring-stone-800">
+                                <div>
+                                    <div class="font-medium text-stone-900 text-sm">想换个环境 / 长期发展</div>
+                                    <div class="text-xs text-stone-500 mt-1">体验不同的学术或生活环境</div>
+                                </div>
+                            </label>
+                            <label class="radio-option cursor-pointer border border-stone-200 rounded-xl p-4 hover:border-stone-400 transition-colors flex items-start space-x-3 bg-stone-50 border-stone-300">
+                                <input type="radio" name="motivation" value="真的想学这个领域" class="mt-1 text-stone-800 focus:ring-stone-800">
+                                <div>
+                                    <div class="font-medium text-stone-900 text-sm">我真的想学这个领域</div>
+                                    <div class="text-xs text-stone-600 mt-1">有具体想探索的问题或方向</div>
+                                </div>
+                            </label>
+                            <label class="radio-option cursor-pointer border border-stone-200 rounded-xl p-4 hover:border-stone-400 transition-colors flex items-start space-x-3 bg-white">
+                                <input type="radio" name="motivation" value="还没确定，想先聊聊看" class="mt-1 text-stone-800 focus:ring-stone-800">
+                                <div>
+                                    <div class="font-medium text-stone-900 text-sm">还没完全确定，想先聊聊看</div>
+                                    <div class="text-xs text-stone-500 mt-1">需要专业判断来厘清方向</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-3">你希望我们帮到你什么？（可多选）</label>
+                        <div class="flex flex-wrap gap-3">
+                            <label class="inline-flex items-center px-4 py-2 rounded-full border border-stone-300 cursor-pointer hover:bg-stone-50 transition-colors bg-white">
+                                <input type="checkbox" name="needs" value="选校定位策略" class="mr-2 text-stone-800 rounded focus:ring-stone-800">
+                                <span class="text-sm text-stone-700">选校定位策略</span>
+                            </label>
+                            <label class="inline-flex items-center px-4 py-2 rounded-full border border-stone-300 cursor-pointer hover:bg-stone-50 transition-colors bg-white">
+                                <input type="checkbox" name="needs" value="文书故事挖掘" class="mr-2 text-stone-800 rounded focus:ring-stone-800">
+                                <span class="text-sm text-stone-700">文书故事挖掘</span>
+                            </label>
+                            <label class="inline-flex items-center px-4 py-2 rounded-full border border-stone-300 cursor-pointer hover:bg-stone-50 transition-colors bg-white">
+                                <input type="checkbox" name="needs" value="专业/职业判断" class="mr-2 text-stone-800 rounded focus:ring-stone-800">
+                                <span class="text-sm text-stone-700">专业/职业判断</span>
+                            </label>
+                            <label class="inline-flex items-center px-4 py-2 rounded-full border border-stone-300 cursor-pointer hover:bg-stone-50 transition-colors bg-white">
+                                <input type="checkbox" name="needs" value="申请流程把控" class="mr-2 text-stone-800 rounded focus:ring-stone-800">
+                                <span class="text-sm text-stone-700">申请流程把控</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
+            </section>
 
-                <div class="form-group">
-                    <label>你希望我们帮到你什么？（可多选）</label>
-                    <div class="checkbox-group">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="needs" value="选校定位策略">
-                            <span>选校定位策略</span>
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="needs" value="文书故事挖掘">
-                            <span>文书故事挖掘</span>
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="needs" value="专业/职业判断">
-                            <span>专业/职业判断</span>
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="needs" value="申请流程把控">
-                            <span>申请流程把控</span>
-                        </label>
+            <section class="form-card bg-white rounded-2xl p-8 shadow-sm" data-progress="40">
+                <div class="flex items-center mb-6">
+                    <span class="w-8 h-8 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center text-sm font-medium mr-3">1</span>
+                    <h2 class="serif text-xl font-semibold text-stone-900">基础背景</h2>
+                    <span class="ml-auto text-xs text-stone-400">30秒看完</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-2">姓名 <span class="text-red-400">*</span></label>
+                        <input type="text" name="name" required class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-stone-50 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-2">微信号（Lisa会添加）<span class="text-red-400">*</span></label>
+                        <input type="text" name="wechat" required class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-stone-50 text-sm">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-stone-700 mb-2">本科学校 + 专业 <span class="text-red-400">*</span></label>
+                        <input type="text" name="school" placeholder="如：北京邮电大学 通信工程" required class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-stone-50 text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-2">目前年级/毕业年份 <span class="text-red-400">*</span></label>
+                        <select name="grade" required class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-white text-sm">
+                            <option value="">请选择</option>
+                            <option value="大三">大三</option>
+                            <option value="大四在读">大四在读</option>
+                            <option value="已毕业">已毕业</option>
+                            <option value="工作党">工作党</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-2">总 GPA / 百分制均分 <span class="text-red-400">*</span></label>
+                        <input type="text" name="gpa" id="gpaInput" placeholder="如：3.6/4.0 或 87/100" required class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-stone-50 text-sm">
+                        <p class="text-xs text-stone-500 mt-1">诚实填写即可，我们有判断算法</p>
+                    </div>
+
+                    <div id="lowGpaNote" class="conditional-field md:col-span-2">
+                        <div class="highlight-box rounded-xl p-4">
+                            <label class="block text-sm font-medium text-stone-800 mb-2">GPA 有波动/偏低的原因是？</label>
+                            <textarea name="gpa_note" rows="2" placeholder="如：大一时适应问题/转专业导致/后期有显著提升趋势..." class="w-full px-3 py-2 rounded-lg border border-stone-300 bg-white focus:border-stone-800 resize-none text-sm"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-stone-700 mb-2">与申请方向最相关的 3-5 门核心课程及成绩</label>
+                        <textarea name="courses" rows="2" placeholder="如：信号处理(92)、电磁场理论(88)..." class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-stone-50 resize-none text-sm"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-2">目标学位 <span class="text-red-400">*</span></label>
+                        <select name="degree" required class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-white text-sm">
+                            <option value="">请选择</option>
+                            <option value="硕士">硕士 (Master)</option>
+                            <option value="博士">博士 (PhD)</option>
+                            <option value="还在考虑">还在考虑</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-2">目标专业方向 <span class="text-red-400">*</span></label>
+                        <input type="text" name="major" placeholder="如：集成电路 / 人类学" required class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-stone-50 text-sm">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-stone-700 mb-2">目标国家/地区（多选）<span class="text-red-400">*</span></label>
+                        <div class="flex flex-wrap gap-3">
+                            <label class="inline-flex items-center px-3 py-1.5 rounded-lg border border-stone-300 cursor-pointer hover:bg-stone-50 text-sm bg-white">
+                                <input type="checkbox" name="countries" value="英国" class="mr-2 text-stone-800 rounded">
+                                英国
+                            </label>
+                            <label class="inline-flex items-center px-3 py-1.5 rounded-lg border border-stone-300 cursor-pointer hover:bg-stone-50 text-sm bg-white">
+                                <input type="checkbox" name="countries" value="欧洲大陆" class="mr-2 text-stone-800 rounded">
+                                欧洲大陆（荷兰/北欧/德国等）
+                            </label>
+                        </div>
+                        <p class="text-xs text-stone-500 mt-2 text-amber-700">* CORE 专注英欧申请，Jerry 在欧洲学术与产业一线，对欧洲项目有独特体感</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-2">目标入学年份 <span class="text-red-400">*</span></label>
+                        <select name="year" required class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-white text-sm">
+                            <option value="2026 Fall">2026 Fall</option>
+                            <option value="2027 Fall">2027 Fall</option>
+                            <option value="其他">其他</option>
+                        </select>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Section 2: 基本信息 -->
-            <div class="form-section">
-                <div class="section-title">基本信息</div>
-                
-                <div class="form-group">
-                    <label class="required">姓名</label>
-                    <input type="text" id="name" name="name" required>
+            <section class="form-card bg-white rounded-2xl p-8 shadow-sm" data-progress="65">
+                <div class="flex items-center mb-6">
+                    <span class="w-8 h-8 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center text-sm font-medium mr-3">2</span>
+                    <h2 class="serif text-xl font-semibold text-stone-900">经历快照</h2>
+                    <span class="ml-auto text-xs text-stone-400">找故事钩子</span>
                 </div>
 
-                <div class="form-group">
-                    <label class="required">微信号（Lisa会添加）</label>
-                    <input type="text" id="wechat" name="wechat" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="required">本科学校 + 专业</label>
-                    <input type="text" id="schoolGrade" name="schoolGrade" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="required">目前年级/毕业年份</label>
-                    <input type="text" id="year" name="year" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="required">总 GPA / 百分制均分</label>
-                    <input type="text" id="gpa" name="gpa" required>
-                    <div class="hint">诚实填写即可，我们有判断算法</div>
-                </div>
-
-                <div class="form-group">
-                    <label>与申请方向最相关的 3-5 门核心课程及成绩</label>
-                    <textarea id="courses" name="courses" rows="3"></textarea>
-                </div>
-            </div>
-
-            <!-- Section 3: 目标 -->
-            <div class="form-section">
-                <div class="section-title">申请目标</div>
-                
-                <div class="form-group">
-                    <label class="required">目标学位</label>
-                    <select id="degree" name="degree" required>
-                        <option value="">请选择</option>
-                        <option value="硕士">硕士</option>
-                        <option value="博士">博士</option>
-                        <option value="本科">本科</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="required">目标专业方向</label>
-                    <input type="text" id="major" name="major" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="required">目标国家/地区（多选）</label>
-                    <div class="checkbox-group">
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="countries" value="英国">
-                            <span>英国</span>
-                        </label>
-                        <label class="checkbox-item">
-                            <input type="checkbox" name="countries" value="欧洲大陆（荷兰/北欧/德国等）">
-                            <span>欧洲大陆（荷兰/北欧/德国等）</span>
-                        </label>
-                    </div>
-                    <div class="hint">* CORE 专注英欧申请，Jerry 在欧洲学术与产业一线，对欧洲项目有独特体感</div>
-                </div>
-
-                <div class="form-group">
-                    <label class="required">目标入学年份</label>
-                    <input type="text" id="targetYear" name="targetYear" required>
-                </div>
-            </div>
-
-            <!-- Section 4: 经历 -->
-            <div class="form-section">
-                <div class="section-title">经历与背景</div>
-                
-                <div class="quote-box">
-                    💡 Clark 的话：<br>
+                <div class="highlight-box rounded-xl p-4 mb-6 text-sm text-stone-700">
+                    <span class="font-medium text-stone-900">💡 Clark 的话：</span> 
                     不要只写"负责XX模块"，试着写"发现XX问题 → 尝试XX方法 → 解决XX"。哪怕你觉得"水"的经历，细节里往往藏着最真实的你。
                 </div>
 
-                <div class="form-group">
-                    <label>最有代表性的项目/科研经历（100字内）</label>
-                    <textarea id="project" name="project" rows="4" maxlength="100"></textarea>
-                    <div class="char-count"><span id="projectCount">0</span>/100</div>
-                </div>
-
-                <div class="form-group">
-                    <label>工作/实习经历</label>
-                    <textarea id="work" name="work" rows="3"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>特殊经历或背景</label>
-                    <textarea id="special" name="special" rows="3" placeholder="如：Gap year、转专业、竞赛获奖、发表论文等"></textarea>
-                </div>
-            </div>
-
-            <!-- Section 5: 其他 -->
-            <div class="form-section">
-                <div class="section-title">其他信息</div>
-                
-                <div class="form-group">
-                    <label class="required">整个留学周期的预算规划（含学费、生活费）</label>
-                    <div class="radio-group">
-                        <label class="radio-item">
-                            <input type="radio" name="budget" value="35万以下" required>
-                            <span>35万以下 - 需要精打细算规划</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="budget" value="35万-60万">
-                            <span>35万 - 60万 - 主流区间（英国/欧洲硕士）</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="budget" value="60万以上">
-                            <span>60万以上 - 宽裕，更看重匹配度</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="budget" value="视投资回报决定">
-                            <span>视投资回报决定</span>
-                        </label>
+                <div class="space-y-6">
+                    <div class="border border-stone-200 rounded-xl p-5 bg-stone-50/30">
+                        <label class="block text-sm font-medium text-stone-800 mb-2">最有代表性的项目/科研经历（100字内）</label>
+                        <input type="text" name="project_name" placeholder="项目名称" class="w-full mb-3 px-3 py-2 rounded-lg border border-stone-300 bg-white focus:border-stone-800 text-sm">
+                        <textarea name="project_detail" rows="3" maxlength="100" placeholder="具体解决了什么问题？用了什么方法？成果是？" class="w-full px-3 py-2 rounded-lg border border-stone-300 bg-white focus:border-stone-800 resize-none text-sm experience-textarea"></textarea>
+                        <div class="char-count"><span class="current">0</span>/100</div>
                     </div>
-                    <div class="hint">欧洲大陆（尤其德国/北欧）学费较低；英国伦敦地区生活费较高</div>
+
+                    <div class="border border-stone-200 rounded-xl p-5 bg-stone-50/30 opacity-75 hover:opacity-100 transition-opacity">
+                        <label class="block text-sm font-medium text-stone-700 mb-2">第二个相关经历（选填）</label>
+                        <input type="text" name="project2_name" placeholder="项目名称" class="w-full mb-3 px-3 py-2 rounded-lg border border-stone-300 bg-white focus:border-stone-800 text-sm">
+                        <textarea name="project2_detail" rows="2" maxlength="100" placeholder="简单描述你的具体贡献..." class="w-full px-3 py-2 rounded-lg border border-stone-300 bg-white focus:border-stone-800 resize-none text-sm experience-textarea"></textarea>
+                        <div class="char-count"><span class="current">0</span>/100</div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-2">实习/工作经历（如有）</label>
+                            <input type="text" name="work" placeholder="公司 + 岗位" class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-stone-50 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-2">最有成就感的一个瞬间？（50字内）</label>
+                            <textarea name="work_moment" rows="2" maxlength="50" class="w-full px-3 py-2 rounded-lg border border-stone-300 bg-white focus:border-stone-800 resize-none text-sm experience-textarea"></textarea>
+                            <div class="char-count"><span class="current">0</span>/50</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="form-card bg-white rounded-2xl p-8 shadow-sm" data-progress="85">
+                <div class="flex items-center mb-6">
+                    <span class="w-8 h-8 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center text-sm font-medium mr-3">3</span>
+                    <h2 class="serif text-xl font-semibold text-stone-900">预算与决策</h2>
                 </div>
 
-                <div class="form-group">
-                    <label>现在最担心申请的哪个环节？</label>
-                    <input type="text" id="worry" name="worry">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-3">整个留学周期的预算规划（含学费、生活费）<span class="text-red-400">*</span></label>
+                        <div class="grid grid-cols-1 gap-3">
+                            <label class="radio-option cursor-pointer border border-stone-200 rounded-xl p-4 hover:border-stone-400 transition-colors flex items-center justify-between bg-white">
+                                <div class="flex items-center">
+                                    <input type="radio" name="budget" value="35万以下" class="text-stone-800 focus:ring-stone-800" required>
+                                    <span class="ml-3 font-medium text-stone-900 text-sm">35万以下</span>
+                                </div>
+                                <span class="text-xs text-stone-500">需要精打细算规划</span>
+                            </label>
+                            <label class="radio-option cursor-pointer border border-stone-200 rounded-xl p-4 hover:border-stone-400 transition-colors flex items-center justify-between bg-white">
+                                <div class="flex items-center">
+                                    <input type="radio" name="budget" value="35万-60万" class="text-stone-800 focus:ring-stone-800">
+                                    <span class="ml-3 font-medium text-stone-900 text-sm">35万 - 60万</span>
+                                </div>
+                                <span class="text-xs text-stone-500">主流区间（英国/欧洲硕士）</span>
+                            </label>
+                            <label class="radio-option cursor-pointer border border-stone-200 rounded-xl p-4 hover:border-stone-400 transition-colors flex items-center justify-between bg-white">
+                                <div class="flex items-center">
+                                    <input type="radio" name="budget" value="60万以上" class="text-stone-800 focus:ring-stone-800">
+                                    <span class="ml-3 font-medium text-stone-900 text-sm">60万以上</span>
+                                </div>
+                                <span class="text-xs text-stone-500">宽裕，更看重匹配度</span>
+                            </label>
+                            <label class="radio-option cursor-pointer border border-stone-200 rounded-xl p-4 hover:border-stone-400 transition-colors flex items-center justify-between bg-white">
+                                <div class="flex items-center">
+                                    <input type="radio" name="budget" value="视投资回报决定" class="text-stone-800 focus:ring-stone-800">
+                                    <span class="ml-3 font-medium text-stone-900 text-sm">视投资回报决定</span>
+                                </div>
+                                <span class="text-xs text-stone-500">依据项目质量调整</span>
+                            </label>
+                        </div>
+                        <p class="text-xs text-stone-500 mt-3">* 欧洲大陆（尤其德国/北欧）学费较低；英国伦敦地区生活费较高</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-2">最终决策者</label>
+                            <select name="decision" class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-white text-sm">
+                                <option value="我自己决定">我自己决定</option>
+                                <option value="需要父母支持，但已达成一致">需要父母支持，但已达成一致</option>
+                                <option value="父母主导，仍在沟通">父母主导决策，仍在沟通中</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-stone-700 mb-2">从哪了解到 CORE？</label>
+                            <select name="source" class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-white text-sm">
+                                <option value="小红书">小红书（Lisa/Clark）</option>
+                                <option value="知乎">知乎</option>
+                                <option value="朋友推荐">朋友推荐</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-2">现在最担心申请的哪个环节？</label>
+                        <select name="worry" class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-white text-sm">
+                            <option value="">请选择...</option>
+                            <option value="GPA不够高">GPA 不够高</option>
+                            <option value="语言还没考">语言成绩还没考出来</option>
+                            <option value="经历太水">经历太"水"，没什么可写的</option>
+                            <option value="选校没概念">选校没概念，怕高攀或低就</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="form-card bg-white rounded-2xl p-8 shadow-sm" data-progress="100">
+                <div class="flex items-center mb-6">
+                    <span class="w-8 h-8 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center text-sm font-medium mr-3">4</span>
+                    <h2 class="serif text-xl font-semibold text-stone-900">差异化资产</h2>
+                    <span class="ml-auto text-xs text-stone-400">选填，但强烈建议</span>
                 </div>
 
-                <div class="form-group">
-                    <label>有没有一段"你觉得没啥用但印象挺深"的经历？</label>
-                    <textarea id="memory" name="memory" rows="3" maxlength="150" placeholder="Gap year、转专业、某次失败、奇怪的爱好..."></textarea>
-                    <div class="char-count"><span id="memoryCount">0</span>/150</div>
-                </div>
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-2">有没有一段"你觉得没啥用但印象挺深"的经历？</label>
+                        <p class="text-xs text-stone-500 mb-2">Gap year、转专业、某次失败、奇怪的爱好...</p>
+                        <textarea name="special" rows="3" maxlength="150" placeholder="放心写，我们擅长把这些'非常规'变成你的'差异化资产'..." class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-stone-50 resize-none text-sm experience-textarea"></textarea>
+                        <div class="char-count"><span class="current">0</span>/150</div>
+                    </div>
 
-                <div class="form-group">
-                    <label>有什么是我们必须知道的特殊情况？</label>
-                    <textarea id="decision" name="decision" rows="3" placeholder="如：工作党转专业、有拒签史、学术失信记录、身体或心理需要特殊支持等"></textarea>
+                    <div>
+                        <label class="block text-sm font-medium text-stone-700 mb-2">有什么是我们必须知道的特殊情况？</label>
+                        <p class="text-xs text-stone-500 mb-2">如：工作党转专业、有拒签史、学术失信记录、身体或心理需要特殊支持等</p>
+                        <textarea name="other" rows="2" placeholder="没有就写'无'..." class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-stone-50 resize-none text-sm"></textarea>
+                    </div>
                 </div>
+            </section>
 
-                <div class="form-group">
-                    <label>你是从哪里知道 CORE 的？</label>
-                    <input type="text" id="source" name="source" placeholder="如：小红书、朋友推荐、公众号等">
+            <div class="pt-4 pb-20">
+                <div class="highlight-box rounded-xl p-4 mb-6 text-sm text-stone-700">
+                    <span class="font-medium">提交前请知：</span> CORE 采用双向选择机制。如果我们判断无法为你提供匹配价值的服务，会如实告知并建议更合适的替代方案。填表不代表承诺服务，但承诺诚实。
                 </div>
+                
+                <button type="button" onclick="submitForm()" id="submitBtn" class="w-full bg-stone-800 text-white font-medium py-4 rounded-xl hover:bg-stone-900 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg flex justify-center items-center text-sm">
+                    <span class="spinner mr-2 w-5 h-5 border-2 border-white border-t-transparent rounded-full"></span>
+                    <span id="btnText">提交评估，等待 Lisa 联系</span>
+                </button>
+                <p class="text-center text-xs text-stone-400 mt-4">24 小时内通过微信回复 · 数据仅 CORE 团队可见</p>
             </div>
-
-            <div class="disclaimer">
-                <strong>提交前请知：</strong> CORE 采用双向选择机制。如果我们判断无法为你提供匹配价值的服务，会如实告知并建议更合适的替代方案。填表不代表承诺服务，但承诺诚实。<br><br>
-                24 小时内通过微信回复 · 数据仅 CORE 团队可见
-            </div>
-
-            <div class="error-message" id="errorMsg"></div>
-            <button type="submit" class="submit-btn" id="submitBtn">提交评估</button>
         </form>
 
-        <div class="success-message" id="successMsg">
-            <h2>✓ 提交成功</h2>
-            <p>Lisa 会在 24 小时内通过微信联系你。<br>请留意好友申请。</p>
+        <div id="successModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl transform scale-95 opacity-0 transition-all duration-300" id="modalContent">
+                <div class="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-stone-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h3 class="serif text-xl font-semibold text-center text-stone-900 mb-2">已收到你的预评估</h3>
+                <p class="text-stone-600 text-center text-sm mb-6 leading-relaxed">
+                    Lisa 会在 24 小时内通过微信联系你。<br>
+                    如双方评估匹配，将邀请你进入<span class="font-medium text-stone-900">「策略共谋会」</span>环节。
+                </p>
+                <div class="bg-stone-50 rounded-lg p-4 mb-6 text-xs text-stone-600 space-y-1">
+                    <div class="flex justify-between">
+                        <span>表单编号</span>
+                        <span class="font-mono text-stone-900" id="refId">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>提交时间</span>
+                        <span id="submitTime">-</span>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="w-full bg-stone-800 text-white py-3 rounded-xl hover:bg-stone-900 transition-colors text-sm">
+                    好的，我会留意微信
+                </button>
+            </div>
         </div>
-    </div>
+    </main>
 
     <script>
-        // Google Apps Script URL - 请替换为你的部署URL
+        // ============================================
+        // 关键配置：替换为你的 Google Apps Script URL
+        // ============================================
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbz80S-C0dKWoQrMywzuxX9T1qWal13V6WydlKHEI-288UYOFE-aHSSLgx5hW7It-v0L/exec';
-        
-        // 生成唯一参考ID
-        function generateRefId() {
-            const date = new Date();
-            const timestamp = date.getFullYear().toString().substr(2) + 
-                              String(date.getMonth() + 1).padStart(2, '0') + 
-                              String(date.getDate()).padStart(2, '0') + 
-                              String(date.getHours()).padStart(2, '0') + 
-                              String(date.getMinutes()).padStart(2, '0');
-            const random = Math.random().toString(36).substr(2, 4).toUpperCase();
-            return `CORE-${timestamp}-${random}`;
-        }
 
-        // 字符计数
-        document.getElementById('project').addEventListener('input', function() {
-            document.getElementById('projectCount').textContent = this.value.length;
-        });
-        document.getElementById('memory').addEventListener('input', function() {
-            document.getElementById('memoryCount').textContent = this.value.length;
-        });
-
-        // 获取多选值
-        function getCheckboxValues(name) {
-            const checkboxes = document.querySelectorAll(`input[name="${name}"]:checked`);
-            return Array.from(checkboxes).map(cb => cb.value).join(', ');
-        }
-
-        // 表单提交
-        document.getElementById('assessmentForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        async function submitForm() {
+            const form = document.getElementById('assessmentForm');
             
-            const submitBtn = document.getElementById('submitBtn');
-            const errorMsg = document.getElementById('errorMsg');
+            // 验证必填项
+            const required = form.querySelectorAll('[required]');
+            let valid = true;
+            let firstError = null;
             
-            submitBtn.disabled = true;
-            submitBtn.textContent = '提交中...';
-            errorMsg.style.display = 'none';
+            required.forEach(field => {
+                if (field.type === 'radio') {
+                    const name = field.name;
+                    const checked = form.querySelector(`[name="${name}"]:checked`);
+                    if (!checked) {
+                        valid = false;
+                        if (!firstError) firstError = field;
+                    }
+                } else if (!field.value.trim()) {
+                    valid = false;
+                    field.classList.add('border-red-400');
+                    if (!firstError) firstError = field;
+                }
+            });
+            
+            if (!valid) {
+                alert('请填写所有必填项（标*号）');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
 
-            // 收集数据
-            const formData = {
-                refId: generateRefId(),
-                name: document.getElementById('name').value.trim(),
-                wechat: document.getElementById('wechat').value.trim(),
-                schoolGrade: document.getElementById('schoolGrade').value.trim(),
-                year: document.getElementById('year').value.trim(),
-                gpa: document.getElementById('gpa').value.trim(),
-                courses: document.getElementById('courses').value.trim(),
-                degree: document.getElementById('degree').value,
-                major: document.getElementById('major').value.trim(),
-                countries: getCheckboxValues('countries'),
-                targetYear: document.getElementById('targetYear').value.trim(),
-                project: document.getElementById('project').value.trim(),
-                work: document.getElementById('work').value.trim(),
-                special: document.getElementById('special').value.trim(),
-                budget: document.querySelector('input[name="budget"]:checked')?.value || '',
-                worry: document.getElementById('worry').value.trim(),
-                memory: document.getElementById('memory').value.trim(),
-                decision: document.getElementById('decision').value.trim(),
-                source: document.getElementById('source').value.trim(),
-                motivation: document.querySelector('input[name="motivation"]:checked')?.value || '',
-                needs: getCheckboxValues('needs')
-            };
+            // 按钮状态
+            const btn = document.getElementById('submitBtn');
+            btn.classList.add('submitting');
+            btn.disabled = true;
+            document.getElementById('btnText').textContent = '提交中...';
 
             try {
-                // 方案A: 使用 no-cors 模式（推荐用于GitHub Pages -> GAS）
-                // 注意：no-cors 模式下无法读取响应内容，但请求会实际发送
+                // 收集表单数据
+                const motivation = form.querySelector('[name="motivation"]:checked');
+                const needs = Array.from(form.querySelectorAll('[name="needs"]:checked')).map(cb => cb.value).join(', ');
+                const countries = Array.from(form.querySelectorAll('[name="countries"]:checked')).map(cb => cb.value).join(', ');
+                const budget = form.querySelector('[name="budget"]:checked');
+                
+                // 组合项目经历
+                const proj1 = form.querySelector('[name="project_name"]')?.value || '';
+                const proj1_detail = form.querySelector('[name="project_detail"]')?.value || '';
+                const proj2 = form.querySelector('[name="project2_name"]')?.value || '';
+                const proj2_detail = form.querySelector('[name="project2_detail"]')?.value || '';
+                let projectStr = proj1 ? `【项目1】${proj1}: ${proj1_detail}` : '';
+                if (proj2) projectStr += ` | 【项目2】${proj2}: ${proj2_detail}`;
+                
+                // 组合工作经历
+                const work = form.querySelector('[name="work"]')?.value || '';
+                const workMoment = form.querySelector('[name="work_moment"]')?.value || '';
+                const workStr = work ? `${work} | ${workMoment}` : '';
+
+                // 生成唯一编号
+                const refId = 'CORE-' + Date.now().toString(36).substr(-6).toUpperCase();
+
+                // 构建 JSON 数据（对齐 Google Sheets 列）
+                const formData = {
+                    refId: refId,
+                    name: form.querySelector('[name="name"]')?.value || '',
+                    wechat: form.querySelector('[name="wechat"]')?.value || '',
+                    schoolGrade: (form.querySelector('[name="school"]')?.value || '') + ' | ' + (form.querySelector('[name="grade"]')?.value || ''),
+                    year: form.querySelector('[name="year"]')?.value || '',
+                    gpa: form.querySelector('[name="gpa"]')?.value || '',
+                    gpaNote: form.querySelector('[name="gpa_note"]')?.value || '',
+                    courses: form.querySelector('[name="courses"]')?.value || '',
+                    degree: form.querySelector('[name="degree"]')?.value || '',
+                    major: form.querySelector('[name="major"]')?.value || '',
+                    countries: countries,
+                    targetYear: form.querySelector('[name="year"]')?.value || '',
+                    project: projectStr,
+                    work: workStr,
+                    special: form.querySelector('[name="special"]')?.value || '',
+                    other: form.querySelector('[name="other"]')?.value || '',
+                    budget: budget ? budget.value : '',
+                    motivation: motivation ? motivation.value : '',
+                    needs: needs,
+                    worry: form.querySelector('[name="worry"]')?.value || '',
+                    decision: form.querySelector('[name="decision"]')?.value || '',
+                    source: form.querySelector('[name="source"]')?.value || '',
+                    submitTime: new Date().toLocaleString('zh-CN')
+                };
+
+                // 提交到 Google Apps Script（no-cors 模式）
                 await fetch(GAS_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
 
-                // no-cors 返回 opaque 响应，无法判断真正成功与否
-                // 假设成功，显示成功页面
-                document.getElementById('assessmentForm').style.display = 'none';
-                document.getElementById('successMsg').style.display = 'block';
-                
-                // 滚动到顶部
-                window.scrollTo(0, 0);
+                // 显示成功弹窗
+                showSuccessModal(refId);
 
             } catch (error) {
-                console.error('提交错误:', error);
-                errorMsg.textContent = '提交失败，请检查网络后重试，或直接联系 Lisa';
-                errorMsg.style.display = 'block';
-                submitBtn.disabled = false;
-                submitBtn.textContent = '提交评估';
+                console.error('提交失败:', error);
+                alert('提交失败，请稍后重试或直接联系 Lisa (微信: LizziV)\n错误: ' + error.message);
+            } finally {
+                btn.classList.remove('submitting');
+                btn.disabled = false;
+                document.getElementById('btnText').textContent = '提交评估，等待 Lisa 联系';
             }
+        }
+
+        function showSuccessModal(refId) {
+            const modal = document.getElementById('successModal');
+            const content = document.getElementById('modalContent');
+            document.getElementById('refId').textContent = refId;
+            document.getElementById('submitTime').textContent = new Date().toLocaleString('zh-CN');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            document.getElementById('successModal').classList.add('hidden');
+            document.getElementById('successModal').classList.remove('flex');
+            // 可选：刷新页面或重置表单
+            // location.reload();
+        }
+
+        // 字符计数功能
+        document.querySelectorAll('.experience-textarea').forEach(textarea => {
+            textarea.addEventListener('input', function() {
+                const current = this.value.length;
+                const max = this.getAttribute('maxlength');
+                const counter = this.parentElement.querySelector('.current');
+                counter.textContent = current;
+                if (current >= max * 0.9) {
+                    counter.parentElement.style.color = '#dc2626';
+                } else {
+                    counter.parentElement.style.color = '#a8a29e';
+                }
+            });
         });
+
+        // GPA 低分提示功能
+        document.getElementById('gpaInput')?.addEventListener('blur', function(e) {
+            const val = e.target.value;
+            const isLow = /[0-2]\.\d/.test(val) || /^[0-7][0-9]$/.test(val) || /3\.[0-3]/.test(val);
+            document.getElementById('lowGpaNote').classList.toggle('show', isLow);
+        });
+
+        // 单选样式反馈
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.querySelectorAll(`input[name="${this.name}"]`).forEach(r => {
+                    r.closest('.radio-option')?.classList.remove('radio-selected');
+                });
+                if (this.checked) this.closest('.radio-option')?.classList.add('radio-selected');
+            });
+        });
+
+        // 进度条功能
+        function updateProgress() {
+            const sections = document.querySelectorAll('section');
+            let filled = 0;
+            sections.forEach(section => {
+                const required = section.querySelectorAll('input[required], select[required]');
+                let hasValue = false;
+                required.forEach(input => {
+                    if (input.type === 'radio' && input.checked) hasValue = true;
+                    if (input.type !== 'radio' && input.value) hasValue = true;
+                });
+                if (hasValue) filled++;
+            });
+            document.getElementById('progressBar').style.width = (filled / sections.length * 100) + '%';
+        }
+
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            el.addEventListener('change', updateProgress);
+            el.addEventListener('input', updateProgress);
+        });
+
+        // 初始化
+        updateProgress();
     </script>
 </body>
 </html>
