@@ -1,28 +1,475 @@
-// 找到你的提交代码，修改为：
-async function submitForm() {
-    const URL = 'https://script.google.com/macros/s/AKfycbz80S-C0dKWoQrMywzuxX9T1qWal13V6WydlKHEI-288UYOFE-aHSSLgx5hW7It-v0L/exec';
-    
-    // 收集表单数据
-    const data = {
-        refId: generateRefId(), // 确保你有生成 refId 的逻辑
-        name: document.getElementById('name').value,
-        wechat: document.getElementById('wechat').value,
-        // ... 其他字段
-    };
-    
-    try {
-        // 方法 A：使用 mode: 'no-cors'（简单但无法读取响应）
-        await fetch(URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORE Studio - 双向匹配小问卷</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            line-height: 1.6;
+            color: #333;
+        }
+        .container {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        .form-section {
+            background: white;
+            padding: 24px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .required::after {
+            content: " *";
+            color: #e74c3c;
+        }
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #4a90d9;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .checkbox-group, .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .checkbox-item, .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .checkbox-item:hover, .radio-item:hover {
+            background: #f8f9fa;
+        }
+        .checkbox-item input, .radio-item input {
+            width: auto;
+        }
+        .hint {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+        .quote-box {
+            background: #f0f7ff;
+            border-left: 3px solid #4a90d9;
+            padding: 12px;
+            margin: 16px 0;
+            font-size: 13px;
+            color: #555;
+        }
+        .disclaimer {
+            background: #fffbeb;
+            border: 1px solid #f0e4bc;
+            padding: 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #666;
+            margin-top: 24px;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: #1a1a1a;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 24px;
+        }
+        .submit-btn:hover {
+            background: #333;
+        }
+        .submit-btn:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+        .char-count {
+            font-size: 12px;
+            color: #888;
+            text-align: right;
+            margin-top: 4px;
+        }
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        .success-message h2 {
+            margin-bottom: 16px;
+            color: #27ae60;
+        }
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>CORE Studio - 双向匹配小问卷</h1>
+            <p>在深入聊天之前，我们需要了解一点点关于你的事情<br>
+            这不是某种"填表"，而是一次互相了解的预热。<br><br>
+            大概需要 5-7 分钟，填完后 Lisa 会在 24 小时内联系你。</p>
+        </div>
+
+        <form id="assessmentForm">
+            <!-- Section 1: 动机 -->
+            <div class="form-section">
+                <div class="section-title">先聊聊，你为什么在这里</div>
+                
+                <div class="form-group">
+                    <label class="required">你为什么要留学？（选最戳中你的那个）</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="motivation" value="换个环境/长期发展" required>
+                            <span>想换个环境 / 长期发展</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="motivation" value="体验学术生活环境">
+                            <span>体验不同的学术或生活环境</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>你希望我们帮到你什么？（可多选）</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="needs" value="选校定位策略">
+                            <span>选校定位策略</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="needs" value="文书故事挖掘">
+                            <span>文书故事挖掘</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="needs" value="专业/职业判断">
+                            <span>专业/职业判断</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="needs" value="申请流程把控">
+                            <span>申请流程把控</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: 基本信息 -->
+            <div class="form-section">
+                <div class="section-title">基本信息</div>
+                
+                <div class="form-group">
+                    <label class="required">姓名</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="required">微信号（Lisa会添加）</label>
+                    <input type="text" id="wechat" name="wechat" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="required">本科学校 + 专业</label>
+                    <input type="text" id="schoolGrade" name="schoolGrade" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="required">目前年级/毕业年份</label>
+                    <input type="text" id="year" name="year" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="required">总 GPA / 百分制均分</label>
+                    <input type="text" id="gpa" name="gpa" required>
+                    <div class="hint">诚实填写即可，我们有判断算法</div>
+                </div>
+
+                <div class="form-group">
+                    <label>与申请方向最相关的 3-5 门核心课程及成绩</label>
+                    <textarea id="courses" name="courses" rows="3"></textarea>
+                </div>
+            </div>
+
+            <!-- Section 3: 目标 -->
+            <div class="form-section">
+                <div class="section-title">申请目标</div>
+                
+                <div class="form-group">
+                    <label class="required">目标学位</label>
+                    <select id="degree" name="degree" required>
+                        <option value="">请选择</option>
+                        <option value="硕士">硕士</option>
+                        <option value="博士">博士</option>
+                        <option value="本科">本科</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="required">目标专业方向</label>
+                    <input type="text" id="major" name="major" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="required">目标国家/地区（多选）</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="countries" value="英国">
+                            <span>英国</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="countries" value="欧洲大陆（荷兰/北欧/德国等）">
+                            <span>欧洲大陆（荷兰/北欧/德国等）</span>
+                        </label>
+                    </div>
+                    <div class="hint">* CORE 专注英欧申请，Jerry 在欧洲学术与产业一线，对欧洲项目有独特体感</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="required">目标入学年份</label>
+                    <input type="text" id="targetYear" name="targetYear" required>
+                </div>
+            </div>
+
+            <!-- Section 4: 经历 -->
+            <div class="form-section">
+                <div class="section-title">经历与背景</div>
+                
+                <div class="quote-box">
+                    💡 Clark 的话：<br>
+                    不要只写"负责XX模块"，试着写"发现XX问题 → 尝试XX方法 → 解决XX"。哪怕你觉得"水"的经历，细节里往往藏着最真实的你。
+                </div>
+
+                <div class="form-group">
+                    <label>最有代表性的项目/科研经历（100字内）</label>
+                    <textarea id="project" name="project" rows="4" maxlength="100"></textarea>
+                    <div class="char-count"><span id="projectCount">0</span>/100</div>
+                </div>
+
+                <div class="form-group">
+                    <label>工作/实习经历</label>
+                    <textarea id="work" name="work" rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>特殊经历或背景</label>
+                    <textarea id="special" name="special" rows="3" placeholder="如：Gap year、转专业、竞赛获奖、发表论文等"></textarea>
+                </div>
+            </div>
+
+            <!-- Section 5: 其他 -->
+            <div class="form-section">
+                <div class="section-title">其他信息</div>
+                
+                <div class="form-group">
+                    <label class="required">整个留学周期的预算规划（含学费、生活费）</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="budget" value="35万以下" required>
+                            <span>35万以下 - 需要精打细算规划</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="budget" value="35万-60万">
+                            <span>35万 - 60万 - 主流区间（英国/欧洲硕士）</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="budget" value="60万以上">
+                            <span>60万以上 - 宽裕，更看重匹配度</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="budget" value="视投资回报决定">
+                            <span>视投资回报决定</span>
+                        </label>
+                    </div>
+                    <div class="hint">欧洲大陆（尤其德国/北欧）学费较低；英国伦敦地区生活费较高</div>
+                </div>
+
+                <div class="form-group">
+                    <label>现在最担心申请的哪个环节？</label>
+                    <input type="text" id="worry" name="worry">
+                </div>
+
+                <div class="form-group">
+                    <label>有没有一段"你觉得没啥用但印象挺深"的经历？</label>
+                    <textarea id="memory" name="memory" rows="3" maxlength="150" placeholder="Gap year、转专业、某次失败、奇怪的爱好..."></textarea>
+                    <div class="char-count"><span id="memoryCount">0</span>/150</div>
+                </div>
+
+                <div class="form-group">
+                    <label>有什么是我们必须知道的特殊情况？</label>
+                    <textarea id="decision" name="decision" rows="3" placeholder="如：工作党转专业、有拒签史、学术失信记录、身体或心理需要特殊支持等"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>你是从哪里知道 CORE 的？</label>
+                    <input type="text" id="source" name="source" placeholder="如：小红书、朋友推荐、公众号等">
+                </div>
+            </div>
+
+            <div class="disclaimer">
+                <strong>提交前请知：</strong> CORE 采用双向选择机制。如果我们判断无法为你提供匹配价值的服务，会如实告知并建议更合适的替代方案。填表不代表承诺服务，但承诺诚实。<br><br>
+                24 小时内通过微信回复 · 数据仅 CORE 团队可见
+            </div>
+
+            <div class="error-message" id="errorMsg"></div>
+            <button type="submit" class="submit-btn" id="submitBtn">提交评估</button>
+        </form>
+
+        <div class="success-message" id="successMsg">
+            <h2>✓ 提交成功</h2>
+            <p>Lisa 会在 24 小时内通过微信联系你。<br>请留意好友申请。</p>
+        </div>
+    </div>
+
+    <script>
+        // Google Apps Script URL - 请替换为你的部署URL
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbz80S-C0dKWoQrMywzuxX9T1qWal13V6WydlKHEI-288UYOFE-aHSSLgx5hW7It-v0L/exec';
+        
+        // 生成唯一参考ID
+        function generateRefId() {
+            const date = new Date();
+            const timestamp = date.getFullYear().toString().substr(2) + 
+                              String(date.getMonth() + 1).padStart(2, '0') + 
+                              String(date.getDate()).padStart(2, '0') + 
+                              String(date.getHours()).padStart(2, '0') + 
+                              String(date.getMinutes()).padStart(2, '0');
+            const random = Math.random().toString(36).substr(2, 4).toUpperCase();
+            return `CORE-${timestamp}-${random}`;
+        }
+
+        // 字符计数
+        document.getElementById('project').addEventListener('input', function() {
+            document.getElementById('projectCount').textContent = this.value.length;
         });
-        
-        // 因为 no-cors 返回 opaque 响应，直接假设成功
-        alert('提交成功！Lisa 会在 24 小时内联系你。');
-        
-    } catch (e) {
-        alert('提交失败：' + e.message);
-    }
-}
+        document.getElementById('memory').addEventListener('input', function() {
+            document.getElementById('memoryCount').textContent = this.value.length;
+        });
+
+        // 获取多选值
+        function getCheckboxValues(name) {
+            const checkboxes = document.querySelectorAll(`input[name="${name}"]:checked`);
+            return Array.from(checkboxes).map(cb => cb.value).join(', ');
+        }
+
+        // 表单提交
+        document.getElementById('assessmentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const errorMsg = document.getElementById('errorMsg');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+            errorMsg.style.display = 'none';
+
+            // 收集数据
+            const formData = {
+                refId: generateRefId(),
+                name: document.getElementById('name').value.trim(),
+                wechat: document.getElementById('wechat').value.trim(),
+                schoolGrade: document.getElementById('schoolGrade').value.trim(),
+                year: document.getElementById('year').value.trim(),
+                gpa: document.getElementById('gpa').value.trim(),
+                courses: document.getElementById('courses').value.trim(),
+                degree: document.getElementById('degree').value,
+                major: document.getElementById('major').value.trim(),
+                countries: getCheckboxValues('countries'),
+                targetYear: document.getElementById('targetYear').value.trim(),
+                project: document.getElementById('project').value.trim(),
+                work: document.getElementById('work').value.trim(),
+                special: document.getElementById('special').value.trim(),
+                budget: document.querySelector('input[name="budget"]:checked')?.value || '',
+                worry: document.getElementById('worry').value.trim(),
+                memory: document.getElementById('memory').value.trim(),
+                decision: document.getElementById('decision').value.trim(),
+                source: document.getElementById('source').value.trim(),
+                motivation: document.querySelector('input[name="motivation"]:checked')?.value || '',
+                needs: getCheckboxValues('needs')
+            };
+
+            try {
+                // 方案A: 使用 no-cors 模式（推荐用于GitHub Pages -> GAS）
+                // 注意：no-cors 模式下无法读取响应内容，但请求会实际发送
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                // no-cors 返回 opaque 响应，无法判断真正成功与否
+                // 假设成功，显示成功页面
+                document.getElementById('assessmentForm').style.display = 'none';
+                document.getElementById('successMsg').style.display = 'block';
+                
+                // 滚动到顶部
+                window.scrollTo(0, 0);
+
+            } catch (error) {
+                console.error('提交错误:', error);
+                errorMsg.textContent = '提交失败，请检查网络后重试，或直接联系 Lisa';
+                errorMsg.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = '提交评估';
+            }
+        });
+    </script>
+</body>
+</html>
