@@ -433,9 +433,9 @@
 
     <script>
         // ============================================
-        // 关键配置：替换为你的 Google Apps Script URL
+        // 关键配置：Cloudflare Worker 地址
         // ============================================
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbz80S-C0dKWoQrMywzuxX9T1qWal13V6WydlKHEI-288UYOFE-aHSSLgx5hW7It-v0L/exec';
+        const GAS_URL = 'https://core-assessment.lizziv1913.workers.dev';
 
         async function submitForm() {
             const form = document.getElementById('assessmentForm');
@@ -481,7 +481,6 @@
                 const countries = Array.from(form.querySelectorAll('[name="countries"]:checked')).map(cb => cb.value).join(', ');
                 const budget = form.querySelector('[name="budget"]:checked');
                 
-                // 组合项目经历
                 const proj1 = form.querySelector('[name="project_name"]')?.value || '';
                 const proj1_detail = form.querySelector('[name="project_detail"]')?.value || '';
                 const proj2 = form.querySelector('[name="project2_name"]')?.value || '';
@@ -489,15 +488,12 @@
                 let projectStr = proj1 ? `【项目1】${proj1}: ${proj1_detail}` : '';
                 if (proj2) projectStr += ` | 【项目2】${proj2}: ${proj2_detail}`;
                 
-                // 组合工作经历
                 const work = form.querySelector('[name="work"]')?.value || '';
                 const workMoment = form.querySelector('[name="work_moment"]')?.value || '';
                 const workStr = work ? `${work} | ${workMoment}` : '';
 
-                // 生成唯一编号
                 const refId = 'CORE-' + Date.now().toString(36).substr(-6).toUpperCase();
 
-                // 构建 JSON 数据（对齐 Google Sheets 列）
                 const formData = {
                     refId: refId,
                     name: form.querySelector('[name="name"]')?.value || '',
@@ -524,16 +520,21 @@
                     submitTime: new Date().toLocaleString('zh-CN')
                 };
 
-                // 提交到 Google Apps Script（no-cors 模式）
-                await fetch(GAS_URL, {
+                // 通过 Cloudflare Worker 提交（移除 no-cors，现在可以正常读取响应）
+                const response = await fetch(GAS_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
 
-                // 显示成功弹窗
-                showSuccessModal(refId);
+                // 现在可以正常解析 JSON 响应了
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSuccessModal(refId);
+                } else {
+                    throw new Error(result.error || '提交失败');
+                }
 
             } catch (error) {
                 console.error('提交失败:', error);
@@ -562,8 +563,6 @@
         function closeModal() {
             document.getElementById('successModal').classList.add('hidden');
             document.getElementById('successModal').classList.remove('flex');
-            // 可选：刷新页面或重置表单
-            // location.reload();
         }
 
         // 字符计数功能
