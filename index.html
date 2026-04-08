@@ -433,9 +433,9 @@
 
     <script>
         // ============================================
-        // 关键配置：Cloudflare Worker 地址
+        // 腾讯云函数 API 地址
         // ============================================
-        const GAS_URL = 'https://core-assessment.lizziv1913.workers.dev';
+        const API_URL = 'https://1324252843-bdc4jvwbbhv.ap-guangzhou.tencentscf.com';
 
         async function submitForm() {
             const form = document.getElementById('assessmentForm');
@@ -520,14 +520,14 @@
                     submitTime: new Date().toLocaleString('zh-CN')
                 };
 
-                // 通过 Cloudflare Worker 提交（移除 no-cors，现在可以正常读取响应）
-                const response = await fetch(GAS_URL, {
+                // 提交到腾讯云函数
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
 
-                // 现在可以正常解析 JSON 响应了
+                // 解析响应
                 const result = await response.json();
                 
                 if (result.success) {
