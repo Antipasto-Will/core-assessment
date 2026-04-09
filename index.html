@@ -63,9 +63,36 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+        /* 隐藏的金数据表单 */
+        #jinshuju-form { display: none; }
     </style>
 </head>
 <body class="text-stone-800 antialiased">
+
+    <!-- 隐藏的 iframe，用于无跳转提交 -->
+    <iframe name="jinshuju_target" id="jinshuju_target" style="display:none;"></iframe>
+    
+    <!-- 隐藏的金数据表单 (xDPguE) -->
+    <form id="jinshuju-form" action="https://jinshuju.net/f/xDPguE" method="POST" target="jinshuju_target">
+        <input type="text" name="entry[field_1]" id="js_name">
+        <input type="text" name="entry[field_2]" id="js_wechat">
+        <input type="text" name="entry[field_3]" id="js_school">
+        <input type="text" name="entry[field_4]" id="js_gpa">
+        <textarea name="entry[field_5]" id="js_courses"></textarea>
+        <input type="text" name="entry[field_6]" id="js_degree">
+        <input type="text" name="entry[field_7]" id="js_major">
+        <input type="text" name="entry[field_8]" id="js_countries">
+        <input type="text" name="entry[field_9]" id="js_year">
+        <textarea name="entry[field_10]" id="js_project"></textarea>
+        <textarea name="entry[field_11]" id="js_work"></textarea>
+        <textarea name="entry[field_12]" id="js_special"></textarea>
+        <input type="text" name="entry[field_13]" id="js_budget">
+        <input type="text" name="entry[field_14]" id="js_motivation">
+        <input type="text" name="entry[field_15]" id="js_needs">
+        <input type="text" name="entry[field_16]" id="js_worry">
+        <input type="text" name="entry[field_17]" id="js_decision">
+        <input type="text" name="entry[field_18]" id="js_source">
+    </form>
 
     <header class="bg-white border-b border-stone-200 sticky top-0 z-50">
         <div class="max-w-3xl mx-auto px-6 py-4 flex justify-between items-center">
@@ -432,115 +459,100 @@
     </main>
 
     <script>
-        // 配置：腾讯云函数URL
-        const API_ENDPOINT = 'https://1324252843-flffbsjax.ap-guangzhou.tencentscf.com';
-
-        async function submitForm() {
+        // 数据提交函数
+        function submitForm() {
             const form = document.getElementById('assessmentForm');
             
-            // 验证必填项
+            // 验证
             const required = form.querySelectorAll('[required]');
             let valid = true;
-            let firstError = null;
-            
             required.forEach(field => {
                 if (field.type === 'radio') {
                     const name = field.name;
                     const checked = form.querySelector(`[name="${name}"]:checked`);
-                    if (!checked) {
-                        valid = false;
-                        if (!firstError) firstError = field;
-                    }
+                    if (!checked) valid = false;
+                } else if (field.type === 'checkbox') {
+                    // 多选框不强制
                 } else if (!field.value.trim()) {
                     valid = false;
                     field.classList.add('border-red-400');
-                    if (!firstError) firstError = field;
+                    setTimeout(() => field.classList.remove('border-red-400'), 2000);
                 }
             });
             
             if (!valid) {
                 alert('请填写所有必填项（标*号）');
-                if (firstError) {
-                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
                 return;
             }
 
             // 按钮状态
             const btn = document.getElementById('submitBtn');
             btn.classList.add('submitting');
-            btn.disabled = true;
             document.getElementById('btnText').textContent = '提交中...';
 
-            try {
-                // 收集表单数据（JSON格式）
-                const formData = {
-                    motivation: form.querySelector('[name="motivation"]:checked')?.value || '',
-                    needs: Array.from(form.querySelectorAll('[name="needs"]:checked')).map(cb => cb.value),
-                    name: form.querySelector('[name="name"]')?.value || '',
-                    wechat: form.querySelector('[name="wechat"]')?.value || '',
-                    school: form.querySelector('[name="school"]')?.value || '',
-                    grade: form.querySelector('[name="grade"]')?.value || '',
-                    gpa: form.querySelector('[name="gpa"]')?.value || '',
-                    gpa_note: form.querySelector('[name="gpa_note"]')?.value || '',
-                    courses: form.querySelector('[name="courses"]')?.value || '',
-                    degree: form.querySelector('[name="degree"]')?.value || '',
-                    major: form.querySelector('[name="major"]')?.value || '',
-                    countries: Array.from(form.querySelectorAll('[name="countries"]:checked')).map(cb => cb.value),
-                    year: form.querySelector('[name="year"]')?.value || '',
-                    project_name: form.querySelector('[name="project_name"]')?.value || '',
-                    project_detail: form.querySelector('[name="project_detail"]')?.value || '',
-                    project2_name: form.querySelector('[name="project2_name"]')?.value || '',
-                    project2_detail: form.querySelector('[name="project2_detail"]')?.value || '',
-                    work: form.querySelector('[name="work"]')?.value || '',
-                    work_moment: form.querySelector('[name="work_moment"]')?.value || '',
-                    budget: form.querySelector('[name="budget"]:checked')?.value || '',
-                    decision: form.querySelector('[name="decision"]')?.value || '',
-                    source: form.querySelector('[name="source"]')?.value || '',
-                    worry: form.querySelector('[name="worry"]')?.value || '',
-                    special: form.querySelector('[name="special"]')?.value || '',
-                    other: form.querySelector('[name="other"]')?.value || ''
-                };
-
-                // 提交到腾讯云函数
-                const response = await fetch(API_ENDPOINT, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showSuccessModal(result.refId);
-                } else {
-                    throw new Error(result.message);
-                }
-
-            } catch (error) {
-                console.error('提交失败:', error);
-                alert('提交失败，请稍后重试或直接联系 Lisa (微信: LizziV)\n错误: ' + error.message);
-            } finally {
-                btn.classList.remove('submitting');
-                btn.disabled = false;
-                document.getElementById('btnText').textContent = '提交评估，等待 Lisa 联系';
-            }
-        }
-
-        function showSuccessModal(refId) {
-            const modal = document.getElementById('successModal');
-            const content = document.getElementById('modalContent');
-            document.getElementById('refId').textContent = refId;
-            document.getElementById('submitTime').textContent = new Date().toLocaleString('zh-CN');
+            // 数据映射到金数据表单
+            document.getElementById('js_name').value = form.querySelector('[name="name"]')?.value || '';
+            document.getElementById('js_wechat').value = form.querySelector('[name="wechat"]')?.value || '';
+            document.getElementById('js_school').value = (form.querySelector('[name="school"]')?.value || '') + ' | ' + (form.querySelector('[name="grade"]')?.value || '');
+            document.getElementById('js_gpa').value = form.querySelector('[name="gpa"]')?.value || '';
+            document.getElementById('js_courses').value = form.querySelector('[name="courses"]')?.value || '';
+            document.getElementById('js_degree').value = form.querySelector('[name="degree"]')?.value || '';
+            document.getElementById('js_major').value = form.querySelector('[name="major"]')?.value || '';
             
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            const countries = Array.from(form.querySelectorAll('[name="countries"]:checked')).map(cb => cb.value).join(', ');
+            document.getElementById('js_countries').value = countries;
+            
+            document.getElementById('js_year').value = form.querySelector('[name="year"]')?.value || '';
+            
+            // 合并项目经历
+            const proj1 = form.querySelector('[name="project_name"]')?.value || '';
+            const proj1_detail = form.querySelector('[name="project_detail"]')?.value || '';
+            const proj2 = form.querySelector('[name="project2_name"]')?.value || '';
+            const proj2_detail = form.querySelector('[name="project2_detail"]')?.value || '';
+            let projectStr = proj1 ? `【项目1】${proj1}: ${proj1_detail}` : '';
+            if (proj2) projectStr += ` | 【项目2】${proj2}: ${proj2_detail}`;
+            document.getElementById('js_project').value = projectStr;
+            
+            const work = form.querySelector('[name="work"]')?.value || '';
+            const workMoment = form.querySelector('[name="work_moment"]')?.value || '';
+            document.getElementById('js_work').value = work ? `${work} | ${workMoment}` : '';
+            
+            document.getElementById('js_special').value = form.querySelector('[name="special"]')?.value || '';
+            
+            const budget = form.querySelector('[name="budget"]:checked');
+            document.getElementById('js_budget').value = budget ? budget.value : '';
+            
+            const motivation = form.querySelector('[name="motivation"]:checked');
+            document.getElementById('js_motivation').value = motivation ? motivation.value : '';
+            
+            const needs = Array.from(form.querySelectorAll('[name="needs"]:checked')).map(cb => cb.value).join(', ');
+            document.getElementById('js_needs').value = needs;
+            
+            document.getElementById('js_worry').value = form.querySelector('[name="worry"]')?.value || '';
+            document.getElementById('js_decision').value = form.querySelector('[name="decision"]')?.value || '';
+            document.getElementById('js_source').value = form.querySelector('[name="source"]')?.value || '';
+
+            // 提交到金数据（通过隐藏 iframe，无跳转）
             setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
-            }, 10);
+                document.getElementById('jinshuju-form').submit();
+                
+                // 显示成功弹窗
+                const modal = document.getElementById('successModal');
+                const content = document.getElementById('modalContent');
+                const refId = 'CORE-' + Date.now().toString(36).substr(-6).toUpperCase();
+                document.getElementById('refId').textContent = refId;
+                document.getElementById('submitTime').textContent = new Date().toLocaleString('zh-CN');
+                
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => {
+                    content.classList.remove('scale-95', 'opacity-0');
+                    content.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                
+                btn.classList.remove('submitting');
+                document.getElementById('btnText').textContent = '提交评估，等待 Lisa 联系';
+            }, 800);
         }
 
         function closeModal() {
@@ -554,13 +566,11 @@
                 const current = this.value.length;
                 const max = this.getAttribute('maxlength');
                 const counter = this.parentElement.querySelector('.current');
-                if (counter) {
-                    counter.textContent = current;
-                    if (current >= max * 0.9) {
-                        counter.parentElement.style.color = '#dc2626';
-                    } else {
-                        counter.parentElement.style.color = '#a8a29e';
-                    }
+                counter.textContent = current;
+                if (current >= max * 0.9) {
+                    counter.parentElement.style.color = '#dc2626';
+                } else {
+                    counter.parentElement.style.color = '#a8a29e';
                 }
             });
         });
