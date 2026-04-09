@@ -116,11 +116,11 @@
                                     <div class="text-xs text-stone-500 mt-1">体验不同的学术或生活环境</div>
                                 </div>
                             </label>
-                            <label class="radio-option cursor-pointer border border-stone-200 rounded-xl p-4 hover:border-stone-400 transition-colors flex items-start space-x-3 bg-stone-50 border-stone-300">
+                            <label class="radio-option cursor-pointer border border-stone-200 rounded-xl p-4 hover:border-stone-400 transition-colors flex items-start space-x-3 bg-white">
                                 <input type="radio" name="motivation" value="真的想学这个领域" class="mt-1 text-stone-800 focus:ring-stone-800">
                                 <div>
                                     <div class="font-medium text-stone-900 text-sm">我真的想学这个领域</div>
-                                    <div class="text-xs text-stone-600 mt-1">有具体想探索的问题或方向</div>
+                                    <div class="text-xs text-stone-500 mt-1">有具体想探索的问题或方向</div>
                                 </div>
                             </label>
                             <label class="radio-option cursor-pointer border border-stone-200 rounded-xl p-4 hover:border-stone-400 transition-colors flex items-start space-x-3 bg-white">
@@ -256,7 +256,7 @@
                 </div>
 
                 <div class="highlight-box rounded-xl p-4 mb-6 text-sm text-stone-700">
-                    <span class="font-medium text-stone-900">💡 Clark 的话：</span> 
+                    <span class="font-medium text-stone-900">💡 Jerry 的话：</span> 
                     不要只写"负责XX模块"，试着写"发现XX问题 → 尝试XX方法 → 解决XX"。哪怕你觉得"水"的经历，细节里往往藏着最真实的你。
                 </div>
 
@@ -344,7 +344,7 @@
                         <div>
                             <label class="block text-sm font-medium text-stone-700 mb-2">从哪了解到 CORE？</label>
                             <select name="source" class="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-stone-800 transition-colors bg-white text-sm">
-                                <option value="小红书">小红书（Lisa/Clark）</option>
+                                <option value="小红书">小红书（Lisa/阿C）</option>
                                 <option value="知乎">知乎</option>
                                 <option value="朋友推荐">朋友推荐</option>
                                 <option value="其他">其他</option>
@@ -432,120 +432,142 @@
     </main>
 
     <script>
-        // 配置：腾讯云函数URL
-        const API_ENDPOINT = 'https://1324252843-flffbsjax.ap-guangzhou.tencentscf.com';
-
+        // 腾讯云函数地址 - 请替换为你的实际地址
+        const API_URL = 'https://1324252843-bdc4jvwbbhv.ap-guangzhou.tencentscf.com';
+        
+        // 数据提交函数 - 改为直接调用腾讯云函数
         async function submitForm() {
             const form = document.getElementById('assessmentForm');
             
             // 验证必填项
-            const required = form.querySelectorAll('[required]');
+            const requiredFields = form.querySelectorAll('[required]');
             let valid = true;
-            let firstError = null;
+            let firstInvalid = null;
             
-            required.forEach(field => {
+            requiredFields.forEach(field => {
                 if (field.type === 'radio') {
                     const name = field.name;
                     const checked = form.querySelector(`[name="${name}"]:checked`);
                     if (!checked) {
                         valid = false;
-                        if (!firstError) firstError = field;
+                        if (!firstInvalid) firstInvalid = field;
+                    }
+                } else if (field.type === 'checkbox') {
+                    // 多选框组验证（至少选一个）
+                    const name = field.name;
+                    const checked = form.querySelectorAll(`[name="${name}"]:checked`);
+                    if (checked.length === 0 && field.hasAttribute('required')) {
+                        valid = false;
                     }
                 } else if (!field.value.trim()) {
                     valid = false;
                     field.classList.add('border-red-400');
-                    if (!firstError) firstError = field;
+                    if (!firstInvalid) firstInvalid = field;
+                    setTimeout(() => field.classList.remove('border-red-400'), 2000);
                 }
             });
+
+            // 特殊验证：目标国家至少选一个
+            const countries = form.querySelectorAll('[name="countries"]:checked');
+            if (countries.length === 0) {
+                valid = false;
+                alert('请至少选择一个目标国家/地区');
+                return;
+            }
             
             if (!valid) {
                 alert('请填写所有必填项（标*号）');
-                if (firstError) {
-                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
+                if (firstInvalid) firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return;
             }
 
             // 按钮状态
             const btn = document.getElementById('submitBtn');
+            const originalText = document.getElementById('btnText').textContent;
             btn.classList.add('submitting');
             btn.disabled = true;
             document.getElementById('btnText').textContent = '提交中...';
 
             try {
-                // 收集表单数据（JSON格式）
+                // 收集表单数据
                 const formData = {
+                    name: form.querySelector('[name="name"]')?.value?.trim() || '',
+                    wechat: form.querySelector('[name="wechat"]')?.value?.trim() || '',
+                    school: form.querySelector('[name="school"]')?.value?.trim() || '',
+                    grade: form.querySelector('[name="grade"]')?.value || '',
+                    gpa: form.querySelector('[name="gpa"]')?.value?.trim() || '',
+                    gpa_note: form.querySelector('[name="gpa_note"]')?.value?.trim() || '',
+                    courses: form.querySelector('[name="courses"]')?.value?.trim() || '',
+                    degree: form.querySelector('[name="degree"]')?.value || '',
+                    major: form.querySelector('[name="major"]')?.value?.trim() || '',
+                    year: form.querySelector('[name="year"]')?.value || '',
                     motivation: form.querySelector('[name="motivation"]:checked')?.value || '',
                     needs: Array.from(form.querySelectorAll('[name="needs"]:checked')).map(cb => cb.value),
-                    name: form.querySelector('[name="name"]')?.value || '',
-                    wechat: form.querySelector('[name="wechat"]')?.value || '',
-                    school: form.querySelector('[name="school"]')?.value || '',
-                    grade: form.querySelector('[name="grade"]')?.value || '',
-                    gpa: form.querySelector('[name="gpa"]')?.value || '',
-                    gpa_note: form.querySelector('[name="gpa_note"]')?.value || '',
-                    courses: form.querySelector('[name="courses"]')?.value || '',
-                    degree: form.querySelector('[name="degree"]')?.value || '',
-                    major: form.querySelector('[name="major"]')?.value || '',
                     countries: Array.from(form.querySelectorAll('[name="countries"]:checked')).map(cb => cb.value),
-                    year: form.querySelector('[name="year"]')?.value || '',
-                    project_name: form.querySelector('[name="project_name"]')?.value || '',
-                    project_detail: form.querySelector('[name="project_detail"]')?.value || '',
-                    project2_name: form.querySelector('[name="project2_name"]')?.value || '',
-                    project2_detail: form.querySelector('[name="project2_detail"]')?.value || '',
-                    work: form.querySelector('[name="work"]')?.value || '',
-                    work_moment: form.querySelector('[name="work_moment"]')?.value || '',
+                    project_name: form.querySelector('[name="project_name"]')?.value?.trim() || '',
+                    project_detail: form.querySelector('[name="project_detail"]')?.value?.trim() || '',
+                    project2_name: form.querySelector('[name="project2_name"]')?.value?.trim() || '',
+                    project2_detail: form.querySelector('[name="project2_detail"]')?.value?.trim() || '',
+                    work: form.querySelector('[name="work"]')?.value?.trim() || '',
+                    work_moment: form.querySelector('[name="work_moment"]')?.value?.trim() || '',
                     budget: form.querySelector('[name="budget"]:checked')?.value || '',
                     decision: form.querySelector('[name="decision"]')?.value || '',
                     source: form.querySelector('[name="source"]')?.value || '',
                     worry: form.querySelector('[name="worry"]')?.value || '',
-                    special: form.querySelector('[name="special"]')?.value || '',
-                    other: form.querySelector('[name="other"]')?.value || ''
+                    special: form.querySelector('[name="special"]')?.value?.trim() || '',
+                    other: form.querySelector('[name="other"]')?.value?.trim() || ''
                 };
 
-                // 提交到腾讯云函数
-                const response = await fetch(API_ENDPOINT, {
+                // 发送请求到腾讯云函数
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(formData)
                 });
 
                 const result = await response.json();
-                
+
                 if (result.success) {
-                    showSuccessModal(result.refId);
+                    // 显示成功弹窗
+                    const modal = document.getElementById('successModal');
+                    const content = document.getElementById('modalContent');
+                    const refId = result.refId || 'CORE-' + Date.now().toString(36).substr(-6).toUpperCase();
+                    document.getElementById('refId').textContent = refId;
+                    document.getElementById('submitTime').textContent = new Date().toLocaleString('zh-CN');
+                    
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                    setTimeout(() => {
+                        content.classList.remove('scale-95', 'opacity-0');
+                        content.classList.add('scale-100', 'opacity-100');
+                    }, 10);
                 } else {
-                    throw new Error(result.message);
+                    throw new Error(result.message || '提交失败');
                 }
 
             } catch (error) {
-                console.error('提交失败:', error);
-                alert('提交失败，请稍后重试或直接联系 Lisa (微信: LizziV)\n错误: ' + error.message);
+                console.error('提交错误:', error);
+                alert('提交失败，请检查网络后重试。错误：' + error.message);
             } finally {
                 btn.classList.remove('submitting');
                 btn.disabled = false;
-                document.getElementById('btnText').textContent = '提交评估，等待 Lisa 联系';
+                document.getElementById('btnText').textContent = originalText;
             }
         }
 
-        function showSuccessModal(refId) {
+        function closeModal() {
             const modal = document.getElementById('successModal');
             const content = document.getElementById('modalContent');
-            document.getElementById('refId').textContent = refId;
-            document.getElementById('submitTime').textContent = new Date().toLocaleString('zh-CN');
-            
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
             setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
-            }, 10);
-        }
-
-        function closeModal() {
-            document.getElementById('successModal').classList.add('hidden');
-            document.getElementById('successModal').classList.remove('flex');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                // 可选：重置表单
+                // document.getElementById('assessmentForm').reset();
+            }, 300);
         }
 
         // 字符计数
@@ -568,8 +590,10 @@
         // GPA 低分提示
         document.getElementById('gpaInput')?.addEventListener('blur', function(e) {
             const val = e.target.value;
+            // 检测低GPA：3.0以下或80分以下
             const isLow = /[0-2]\.\d/.test(val) || /^[0-7][0-9]$/.test(val) || /3\.[0-3]/.test(val);
-            document.getElementById('lowGpaNote').classList.toggle('show', isLow);
+            const note = document.getElementById('lowGpaNote');
+            if (note) note.classList.toggle('show', isLow);
         });
 
         // 单选样式反馈
@@ -595,7 +619,8 @@
                 });
                 if (hasValue) filled++;
             });
-            document.getElementById('progressBar').style.width = (filled / sections.length * 100) + '%';
+            const progress = Math.min((filled / sections.length * 100), 100);
+            document.getElementById('progressBar').style.width = progress + '%';
         }
 
         document.querySelectorAll('input, select, textarea').forEach(el => {
