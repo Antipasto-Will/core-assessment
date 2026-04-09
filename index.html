@@ -432,10 +432,8 @@
     </main>
 
     <script>
-        // ============================================
-        // 腾讯云函数 API 地址
-        // ============================================
-        const API_URL = 'https://1324252843-bdc4jvwbbhv.ap-guangzhou.tencentscf.com';
+        // 配置：腾讯云函数URL
+        const API_ENDPOINT = 'https://1324252843-flffbsjax.ap-guangzhou.tencentscf.com';
 
         async function submitForm() {
             const form = document.getElementById('assessmentForm');
@@ -475,65 +473,50 @@
             document.getElementById('btnText').textContent = '提交中...';
 
             try {
-                // 收集表单数据
-                const motivation = form.querySelector('[name="motivation"]:checked');
-                const needs = Array.from(form.querySelectorAll('[name="needs"]:checked')).map(cb => cb.value).join(', ');
-                const countries = Array.from(form.querySelectorAll('[name="countries"]:checked')).map(cb => cb.value).join(', ');
-                const budget = form.querySelector('[name="budget"]:checked');
-                
-                const proj1 = form.querySelector('[name="project_name"]')?.value || '';
-                const proj1_detail = form.querySelector('[name="project_detail"]')?.value || '';
-                const proj2 = form.querySelector('[name="project2_name"]')?.value || '';
-                const proj2_detail = form.querySelector('[name="project2_detail"]')?.value || '';
-                let projectStr = proj1 ? `【项目1】${proj1}: ${proj1_detail}` : '';
-                if (proj2) projectStr += ` | 【项目2】${proj2}: ${proj2_detail}`;
-                
-                const work = form.querySelector('[name="work"]')?.value || '';
-                const workMoment = form.querySelector('[name="work_moment"]')?.value || '';
-                const workStr = work ? `${work} | ${workMoment}` : '';
-
-                const refId = 'CORE-' + Date.now().toString(36).substr(-6).toUpperCase();
-
+                // 收集表单数据（JSON格式）
                 const formData = {
-                    refId: refId,
+                    motivation: form.querySelector('[name="motivation"]:checked')?.value || '',
+                    needs: Array.from(form.querySelectorAll('[name="needs"]:checked')).map(cb => cb.value),
                     name: form.querySelector('[name="name"]')?.value || '',
                     wechat: form.querySelector('[name="wechat"]')?.value || '',
-                    schoolGrade: (form.querySelector('[name="school"]')?.value || '') + ' | ' + (form.querySelector('[name="grade"]')?.value || ''),
-                    year: form.querySelector('[name="year"]')?.value || '',
+                    school: form.querySelector('[name="school"]')?.value || '',
+                    grade: form.querySelector('[name="grade"]')?.value || '',
                     gpa: form.querySelector('[name="gpa"]')?.value || '',
-                    gpaNote: form.querySelector('[name="gpa_note"]')?.value || '',
+                    gpa_note: form.querySelector('[name="gpa_note"]')?.value || '',
                     courses: form.querySelector('[name="courses"]')?.value || '',
                     degree: form.querySelector('[name="degree"]')?.value || '',
                     major: form.querySelector('[name="major"]')?.value || '',
-                    countries: countries,
-                    targetYear: form.querySelector('[name="year"]')?.value || '',
-                    project: projectStr,
-                    work: workStr,
-                    special: form.querySelector('[name="special"]')?.value || '',
-                    other: form.querySelector('[name="other"]')?.value || '',
-                    budget: budget ? budget.value : '',
-                    motivation: motivation ? motivation.value : '',
-                    needs: needs,
-                    worry: form.querySelector('[name="worry"]')?.value || '',
+                    countries: Array.from(form.querySelectorAll('[name="countries"]:checked')).map(cb => cb.value),
+                    year: form.querySelector('[name="year"]')?.value || '',
+                    project_name: form.querySelector('[name="project_name"]')?.value || '',
+                    project_detail: form.querySelector('[name="project_detail"]')?.value || '',
+                    project2_name: form.querySelector('[name="project2_name"]')?.value || '',
+                    project2_detail: form.querySelector('[name="project2_detail"]')?.value || '',
+                    work: form.querySelector('[name="work"]')?.value || '',
+                    work_moment: form.querySelector('[name="work_moment"]')?.value || '',
+                    budget: form.querySelector('[name="budget"]:checked')?.value || '',
                     decision: form.querySelector('[name="decision"]')?.value || '',
                     source: form.querySelector('[name="source"]')?.value || '',
-                    submitTime: new Date().toLocaleString('zh-CN')
+                    worry: form.querySelector('[name="worry"]')?.value || '',
+                    special: form.querySelector('[name="special"]')?.value || '',
+                    other: form.querySelector('[name="other"]')?.value || ''
                 };
 
                 // 提交到腾讯云函数
-                const response = await fetch(API_URL, {
+                const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify(formData)
                 });
 
-                // 解析响应
                 const result = await response.json();
                 
                 if (result.success) {
-                    showSuccessModal(refId);
+                    showSuccessModal(result.refId);
                 } else {
-                    throw new Error(result.error || '提交失败');
+                    throw new Error(result.message);
                 }
 
             } catch (error) {
@@ -565,22 +548,24 @@
             document.getElementById('successModal').classList.remove('flex');
         }
 
-        // 字符计数功能
+        // 字符计数
         document.querySelectorAll('.experience-textarea').forEach(textarea => {
             textarea.addEventListener('input', function() {
                 const current = this.value.length;
                 const max = this.getAttribute('maxlength');
                 const counter = this.parentElement.querySelector('.current');
-                counter.textContent = current;
-                if (current >= max * 0.9) {
-                    counter.parentElement.style.color = '#dc2626';
-                } else {
-                    counter.parentElement.style.color = '#a8a29e';
+                if (counter) {
+                    counter.textContent = current;
+                    if (current >= max * 0.9) {
+                        counter.parentElement.style.color = '#dc2626';
+                    } else {
+                        counter.parentElement.style.color = '#a8a29e';
+                    }
                 }
             });
         });
 
-        // GPA 低分提示功能
+        // GPA 低分提示
         document.getElementById('gpaInput')?.addEventListener('blur', function(e) {
             const val = e.target.value;
             const isLow = /[0-2]\.\d/.test(val) || /^[0-7][0-9]$/.test(val) || /3\.[0-3]/.test(val);
@@ -597,7 +582,7 @@
             });
         });
 
-        // 进度条功能
+        // 进度条
         function updateProgress() {
             const sections = document.querySelectorAll('section');
             let filled = 0;
